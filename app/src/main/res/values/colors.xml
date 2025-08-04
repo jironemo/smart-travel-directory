@@ -1,0 +1,13 @@
+<resources>
+    <color name="primary">#FF6B35</color>
+    <color name="primary_dark">#E55A2B</color>
+    <color name="accent">#FF8A65</color>
+    <color name="background_light">#F5F5F5</color>
+
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="icon_tint">#9E9E9E</color>
+
+    <color name="chip_background">#E3F2FD</color>
+    <color name="star_color">#FFC107</color>
+</resources>

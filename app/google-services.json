@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "266737770594",
+    "project_id": "travel-directory-9895e",
+    "storage_bucket": "travel-directory-9895e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266737770594:android:e8c599706523bfa61a713b",
+        "android_client_info": {
+          "package_name": "com.smarttravel.myanmar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDF5LsNO-E3mkIHZN36-moKIzVTghdUAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
