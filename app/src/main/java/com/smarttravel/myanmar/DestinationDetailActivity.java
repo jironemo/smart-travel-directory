@@ -4,12 +4,15 @@ import static com.smarttravel.myanmar.DestinationAdapter.disableSslVerification;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -20,6 +23,12 @@ public class DestinationDetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_destination_detail);
+        // Set up the toolbar as the ActionBar
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         db = FirebaseFirestore.getInstance();
         //get the destination ID from the intent;
         String destinationId = getIntent().getStringExtra("destination_id");
@@ -28,6 +37,16 @@ public class DestinationDetailActivity extends AppCompatActivity {
         loadDestinationDetails(destinationId);
         // Now use this destinationId to fetch or load data on this page
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     private void loadDestinationDetails(String destinationId) {
         // Fetch the destination details from Firestore using the destinationId
         // and update the UI accordingly
@@ -47,7 +66,7 @@ db.collection("destinations").document(destinationId).get()
             TextView nameTextView = findViewById(R.id.detailNameTextView);
 
        TextView descriptionTextView = findViewById(R.id.detailDescriptionTextView);
-       TextView categoryTextView = findViewById(R.id.detailCategoryTextView);
+       Chip  categoryTextView = findViewById(R.id.detailCategoryChip);
          TextView locationTextView = findViewById(R.id.detailLocationTextView);
          ImageView imageView = findViewById(R.id.detailImageView);
         TextView ratingTextView = findViewById(R.id.detailRatingTextView);

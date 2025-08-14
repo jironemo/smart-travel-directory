@@ -1,113 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/scrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
     android:background="@android:color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="0dp">
 
-        <!-- Destination Image -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/primary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:elevation="4dp" />
+
+        <!-- Full-width image -->
         <ImageView
             android:id="@+id/detailImageView"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="240dp"
             android:scaleType="centerCrop"
             android:contentDescription="@string/destination_image"
             android:src="@drawable/placeholder_image" />
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/detailNameTextView"
+        <!-- Card for text content -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Destination Name"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="6dp" />
-
-        <!-- Category and Rating Horizontal -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <TextView
-                android:id="@+id/detailCategoryTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:layout_marginEnd="16dp"
-                android:background="@drawable/ic_launcher_background"
-                android:padding="6dp"
-                android:text="Category"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+            android:layout_margin="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_star"/>
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/detailRatingTextView"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/detailNameTextView"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="4.5"
-                    android:textSize="14sp"
+                    android:text="Destination Name"
+                    android:textSize="22sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_secondary"
-                    android:layout_marginStart="4dp" />
+                    android:textColor="@color/text_primary"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="6dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp" />
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/detailCategoryChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Category"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        app:chipBackgroundColor="@color/primary"
+                        app:chipStrokeColor="@color/primary"
+                        app:chipStrokeWidth="1dp"
+                        app:closeIconEnabled="false"
+                        app:checkedIconVisible="false"
+                        android:textColor="@android:color/white" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginStart="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_star"/>
+
+                        <TextView
+                            android:id="@+id/detailRatingTextView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="4.5"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_location"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:id="@+id/detailLocationTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Location"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/detailDescriptionTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Description goes here"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="16dp" />
             </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- Location -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:src="@drawable/ic_location"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:id="@+id/detailLocationTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Location"
-                android:textSize="14sp"
-                android:textColor="@color/text_secondary" />
-        </LinearLayout>
-
-        <!-- Description -->
-        <TextView
-            android:id="@+id/detailDescriptionTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Description goes here"
-            android:textSize="16sp"
-            android:textColor="@color/text_primary" />
-
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
-
 </ScrollView>

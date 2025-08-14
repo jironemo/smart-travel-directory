@@ -1,5 +1,6 @@
 // MainActivity.java
 package com.smarttravel.myanmar;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -34,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner divisionSpinner;
     private ChipGroup categoryChipGroup;
 
-    private String selectedDivision = "";
+    private String selectedLocation = "";
     private String selectedCategory = "";
     private String searchQuery = "";
 
@@ -42,14 +44,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         db = FirebaseFirestore.getInstance();
-
         initViews();
         setupRecyclerView();
         setupSearch();
         setupFilters();
         loadDestinations();
+        setupBottomNavigation();
     }
 
     private void initViews() {
@@ -86,15 +87,26 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupFilters() {
         // Setup division spinner
-        String[] divisions = {"All Divisions", "Yangon", "Mandalay", "Bagan", "Inle Lake", "Kalaw", "Hsipaw", "Mrauk U"};
-        ArrayAdapter<String> divisionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, divisions);
-        divisionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        divisionSpinner.setAdapter(divisionAdapter);
+        List<String> divisions = new ArrayList<>();
+        divisions.add("All Divisions");
+        db.collection("destinations")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        String location = document.getString("location");
+                        if (location != null && !divisions.contains(location)) {
+                            divisions.add(location);
+                        }
+                    }
+                    ArrayAdapter<String> divisionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, divisions);
+                    divisionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    divisionSpinner.setAdapter(divisionAdapter);
+                });
 
         divisionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedDivision = position == 0 ? "" : divisions[position];
+                selectedLocation = position == 0 ? "" : divisions.get(position);
                 filterDestinations();
             }
 
@@ -102,29 +114,26 @@ public class MainActivity extends AppCompatActivity {
             public void onNothingSelected(AdapterView<?> parent) {}
         });
 
-        // Setup category chips
+        // Setup category chips (single selection)
+        categoryChipGroup.setSingleSelection(true);
         String[] categories = {"Temple", "Pagoda", "Nature", "Cultural", "Adventure", "Food", "Shopping"};
         for (String category : categories) {
             Chip chip = new Chip(this);
             chip.setText(category);
             chip.setCheckable(true);
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    selectedCategory = category;
-                    // Uncheck other chips
-                    for (int i = 0; i < categoryChipGroup.getChildCount(); i++) {
-                        Chip otherChip = (Chip) categoryChipGroup.getChildAt(i);
-                        if (otherChip != chip) {
-                            otherChip.setChecked(false);
-                        }
-                    }
-                } else {
-                    selectedCategory = "";
-                }
-                filterDestinations();
-            });
             categoryChipGroup.addView(chip);
         }
+        categoryChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                selectedCategory = "";
+            } else {
+                Chip checkedChip = group.findViewById(checkedIds.get(0));
+                if (checkedChip != null) {
+                    selectedCategory = checkedChip.getText().toString();
+                }
+            }
+            filterDestinations();
+        });
     }
 
     private void loadDestinations() {
@@ -154,17 +163,46 @@ public class MainActivity extends AppCompatActivity {
                     destination.getName().toLowerCase().contains(searchQuery) ||
                     destination.getDescription().toLowerCase().contains(searchQuery);
 
-            boolean matchesDivision = selectedDivision.isEmpty() ||
-                    destination.getDivision().equals(selectedDivision);
+            boolean matchesLocation = selectedLocation.isEmpty() ||
+                    destination.getLocation().equals(selectedLocation);
 
             boolean matchesCategory = selectedCategory.isEmpty() ||
                     destination.getCategory().equals(selectedCategory);
 
-            if (matchesSearch && matchesDivision && matchesCategory) {
+            if (matchesSearch && matchesLocation && matchesCategory) {
                 filteredDestinations.add(destination);
             }
         }
 
         adapter.notifyDataSetChanged();
+    }
+
+    private void setupBottomNavigation() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigationView);
+        bottomNav.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_home) {
+                // Already on home, do nothing
+                return true;
+            } else if (id == R.id.nav_search) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+                startActivity(new Intent(this, SearchActivity.class));
+                return true;
+            } else if (id == R.id.nav_trip_advice) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+                startActivity(new Intent(this, TripAdviceActivity.class));
+                return true;
+            } else if (id == R.id.nav_favorites) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+                startActivity(new Intent(this, FavouritesActivity.class));
+                return true;
+            } else if (id == R.id.nav_profile) {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+                startActivity(new Intent(this, ProfileActivity.class));
+                return true;
+            }
+            return false;
+        });
+        bottomNav.getMenu().findItem(R.id.nav_home).setChecked(true);
     }
 }

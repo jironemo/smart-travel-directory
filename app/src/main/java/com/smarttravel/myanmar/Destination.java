@@ -4,7 +4,6 @@ public class Destination {
     private String id;
     private String name;
     private String description;
-    private String division;
     private String category;
     private String imageUrl;
     private double rating;
@@ -17,7 +16,6 @@ public class Destination {
                        String imageUrl, double rating, String location, boolean isPopular) {
         this.name = name;
         this.description = description;
-        this.division = division;
         this.category = category;
         this.imageUrl = imageUrl;
         this.rating = rating;
@@ -35,8 +33,6 @@ public class Destination {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public String getDivision() { return division; }
-    public void setDivision(String division) { this.division = division; }
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
