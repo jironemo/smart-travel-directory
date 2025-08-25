@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/reviewUsernameTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Username"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+        <ImageView android:id="@+id/reviewStar1" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_star_border" />
+        <ImageView android:id="@+id/reviewStar2" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_star_border" />
+        <ImageView android:id="@+id/reviewStar3" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_star_border" />
+        <ImageView android:id="@+id/reviewStar4" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_star_border" />
+        <ImageView android:id="@+id/reviewStar5" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_star_border" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/reviewDateTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Aug 25, 2025 12:00"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/reviewCommentTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Review comment goes here."
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="2dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"
+        android:layout_marginTop="8dp" />
+</LinearLayout>
+

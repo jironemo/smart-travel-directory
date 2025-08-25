@@ -5,20 +5,46 @@ import static com.smarttravel.myanmar.DestinationAdapter.disableSslVerification;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import org.w3c.dom.Comment;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class DestinationDetailActivity extends AppCompatActivity {
 
     private FirebaseFirestore db;
+    private String destinationId;
+    private boolean isFavourite = false;
+    private String favouriteDocId = null;
+    private MaterialButton favouriteButton;
+
+    private RecyclerView reviewsRecyclerView;
+    private ReviewsAdapter reviewsAdapter;
+    private final List<ReviewDisplay> reviewDisplayList = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,12 +56,31 @@ public class DestinationDetailActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
         db = FirebaseFirestore.getInstance();
-        //get the destination ID from the intent;
-        String destinationId = getIntent().getStringExtra("destination_id");
+        destinationId = getIntent().getStringExtra("destination_id");
+
+
 
         Log.d("DESID", "Destination ID: " + destinationId);
         loadDestinationDetails(destinationId);
         // Now use this destinationId to fetch or load data on this page
+
+        // Favourite button setup
+        favouriteButton = findViewById(R.id.btn_favourite);
+        checkFavouriteState();
+
+        favouriteButton.setOnClickListener(v -> {
+            if (isFavourite) {
+                removeFromFavourites();
+            } else {
+                addToFavourites();
+            }
+        });
+
+        reviewsRecyclerView = findViewById(R.id.reviewsRecyclerView);
+        reviewsAdapter = new ReviewsAdapter(reviewDisplayList);
+        reviewsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        reviewsRecyclerView.setAdapter(reviewsAdapter);
+        loadReviews();
     }
 
     @Override
@@ -51,39 +96,181 @@ public class DestinationDetailActivity extends AppCompatActivity {
         // Fetch the destination details from Firestore using the destinationId
         // and update the UI accordingly
         Log.d("DESID", "Destination ID: " + destinationId);
-db.collection("destinations").document(destinationId).get()
-          .addOnSuccessListener(documentSnapshot -> {
-              Destination d = documentSnapshot.toObject(Destination.class);
-              if (d != null) {
-                  updateUI(d);
-              }
-          })
-          .addOnFailureListener(e -> Log.e("DESID", "Error fetching destination", e));
+        db.collection("destinations").document(destinationId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Destination d = documentSnapshot.toObject(Destination.class);
+                    if (d != null) {
+                        updateUI(d);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("DESID", "Error fetching destination", e));
     }
 
 
-   private void updateUI(Destination destination) {
-            TextView nameTextView = findViewById(R.id.detailNameTextView);
+    private void updateUI(Destination destination) {
+        TextView nameTextView = findViewById(R.id.detailNameTextView);
 
-       TextView descriptionTextView = findViewById(R.id.detailDescriptionTextView);
-       Chip  categoryTextView = findViewById(R.id.detailCategoryChip);
-         TextView locationTextView = findViewById(R.id.detailLocationTextView);
-         ImageView imageView = findViewById(R.id.detailImageView);
+        TextView descriptionTextView = findViewById(R.id.detailDescriptionTextView);
+        Chip categoryTextView = findViewById(R.id.detailCategoryChip);
+        TextView locationTextView = findViewById(R.id.detailLocationTextView);
+        ImageView imageView = findViewById(R.id.detailImageView);
         TextView ratingTextView = findViewById(R.id.detailRatingTextView);
 
 
-       disableSslVerification();
-       // Load image with Glide
-       Glide.with(this.getApplicationContext())
-               .load(destination.getImageUrl())
-               .placeholder(R.drawable.placeholder_image)
-               .error(R.drawable.placeholder_image)
-               .into(imageView);
+        disableSslVerification();
+        // Load image with Glide
+        Glide.with(this.getApplicationContext())
+                .load(destination.getImageUrl())
+                .placeholder(R.drawable.placeholder_image)
+                .error(R.drawable.placeholder_image)
+                .into(imageView);
 
-            nameTextView.setText(destination.getName());
-            descriptionTextView.setText(destination.getDescription());
-            categoryTextView.setText(destination.getCategory());
-            locationTextView.setText(destination.getLocation());
-            ratingTextView.setText(String.format("%.1f", destination.getRating()));
+        nameTextView.setText(destination.getName());
+        descriptionTextView.setText(destination.getDescription());
+        categoryTextView.setText(destination.getCategory());
+        locationTextView.setText(destination.getLocation());
+        ratingTextView.setText(String.format("%.1f", destination.getRating()));
+
+        // Hide favourite button if user is not logged in
+        if (User.getCurrentUser() == null) {
+            favouriteButton.setVisibility(View.GONE);
+        } else {
+            favouriteButton.setVisibility(View.VISIBLE);
+        }
+
+        // Show review input if user is logged in
+        LinearLayout reviewInputContainer = findViewById(R.id.reviewInputContainer);
+        if (User.getCurrentUser() != null) {
+            reviewInputContainer.setVisibility(View.VISIBLE);
+            Button submitReviewButton = findViewById(R.id.submitReviewButton);
+            EditText reviewCommentEditText = findViewById(R.id.reviewCommentEditText);
+            android.widget.RatingBar reviewRatingBar = findViewById(R.id.reviewRatingBar);
+            submitReviewButton.setOnClickListener(v -> {
+                String comment = reviewCommentEditText.getText().toString().trim();
+                float rating = reviewRatingBar.getRating();
+                if (comment.isEmpty() || rating == 0) {
+                    // Optionally show error
+                    return;
+                }
+                HashMap<String, Object> reviewData = new HashMap<>();
+                reviewData.put("comment", comment);
+                reviewData.put("created_at", com.google.firebase.Timestamp.now());
+                reviewData.put("destination_id", db.collection("destinations").document(destinationId));
+                reviewData.put("rating", rating);
+                reviewData.put("updated_at", com.google.firebase.Timestamp.now());
+                Log.i("USERID", "User ID: " + User.getCurrentUser().getId());
+                String userId = User.getCurrentUser().getId();
+                if (userId == null || userId.isEmpty()) {
+                    // Try to get userId from Firestore document reference
+                    userId = User.getCurrentUser().getEmail(); // fallback to email if no id
+                    if (userId == null || userId.isEmpty()) {
+                        // Optionally show error or prevent review submission
+                        return;
+                    }
+                }
+                reviewData.put("user_id", db.collection("users").document(userId));
+                db.collection("review").add(reviewData)
+                    .addOnSuccessListener(docRef -> {
+                        reviewCommentEditText.setText("");
+                        reviewRatingBar.setRating(0);
+                        loadReviews();
+                    });
+            });
+        } else {
+            reviewInputContainer.setVisibility(View.GONE);
+        }
     }
+
+    private void checkFavouriteState() {
+        String userId = User.getCurrentUser() != null ? User.getCurrentUser().getId() : "guest";
+        db.collection("favourites")
+                .whereEqualTo("destination_id", destinationId)
+                .whereEqualTo("user_id", userId)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (!query.isEmpty()) {
+                        isFavourite = true;
+                        favouriteDocId = query.getDocuments().get(0).getId();
+                        updateFavouriteButton();
+                    } else {
+                        isFavourite = false;
+                        favouriteDocId = null;
+                        updateFavouriteButton();
+                    }
+                });
+    }
+
+    private void updateFavouriteButton() {
+        if (isFavourite) {
+            favouriteButton.setText("");
+            favouriteButton.setIconResource(R.drawable.ic_favorite_nav);
+        } else {
+            favouriteButton.setText("");
+            favouriteButton.setIconResource(R.drawable.ic_favorite_border);
+        }
+    }
+
+    private void addToFavourites() {
+        String userId = User.getCurrentUser() != null ? User.getCurrentUser().getId() : "guest";
+        HashMap<String, Object> fav = new HashMap<>();
+        fav.put("destination_id", destinationId);
+        fav.put("user_id", userId);
+        db.collection("favourites").add(fav)
+                .addOnSuccessListener(docRef -> {
+                    isFavourite = true;
+                    favouriteDocId = docRef.getId();
+                    updateFavouriteButton();
+                });
+    }
+
+    private void removeFromFavourites() {
+        if (favouriteDocId != null) {
+            db.collection("favourites").document(favouriteDocId).delete()
+                    .addOnSuccessListener(aVoid -> {
+                        isFavourite = false;
+                        favouriteDocId = null;
+                        updateFavouriteButton();
+                    });
+        }
+    }
+
+    private void loadReviews() {
+        Log.d("REVIEWS", "Loading reviews for destination ID: " + destinationId);
+        DocumentReference destinationRef = db.collection("destinations").document(destinationId);
+
+        db.collection("review")
+                .whereEqualTo("destination_id", destinationRef)
+                .orderBy("created_at", Query.Direction.DESCENDING)
+                .get()
+                .addOnCompleteListener(task -> {
+                             if (task.isSuccessful()) {
+                                 QuerySnapshot querySnapshot = task.getResult();
+                                 System.out.println("Fetched reviews count: " + querySnapshot.size());
+                                 reviewDisplayList.clear();
+                                 List<ReviewDisplay> tempList = new ArrayList<>();
+                                 int totalReviews = querySnapshot.size();
+                                 if (totalReviews == 0) {
+                                     reviewsAdapter.notifyDataSetChanged();
+                                     return;
+                                 }
+                                 final int[] loadedCount = {0};
+                                 for (QueryDocumentSnapshot doc : querySnapshot) {
+                                     Review review = doc.toObject(Review.class);
+                                     String userId = review.getUser_id().getId();
+                                     db.collection("users").document(userId).get()
+                                             .addOnSuccessListener(userDoc -> {
+                                                 String username = userDoc.exists() ? userDoc.getString("username") : "Unknown";
+                                                 tempList.add(new ReviewDisplay(review, username));
+                                                 loadedCount[0]++;
+                                                 if (loadedCount[0] == totalReviews) {
+                                                     reviewDisplayList.clear();
+                                                     reviewDisplayList.addAll(tempList);
+                                                     reviewsAdapter.notifyDataSetChanged();
+                                                 }
+                                             });
+                                 }
+                             }
+                         });
+    }
+
 }

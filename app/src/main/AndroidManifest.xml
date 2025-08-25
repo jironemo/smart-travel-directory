@@ -11,6 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartTravelDirectory">
+        <activity android:name="com.smarttravel.myanmar.LoginActivity" />
         <activity
             android:name="com.smarttravel.myanmar.MainActivity"
             android:exported="true"
@@ -38,6 +39,7 @@
             android:exported="false" />
         <activity android:name="com.smarttravel.myanmar.FavouritesActivity"
             android:exported="false" />
+        <activity android:name=".AdminDashboardActivity" />
     </application>
 
 </manifest>

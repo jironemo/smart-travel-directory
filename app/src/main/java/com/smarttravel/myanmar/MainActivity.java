@@ -43,14 +43,23 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        db = FirebaseFirestore.getInstance();
-        initViews();
-        setupRecyclerView();
-        setupSearch();
-        setupFilters();
-        loadDestinations();
-        setupBottomNavigation();
+
+        // Only show LoginActivity if this is the launcher activity
+        if (getIntent().getBooleanExtra("from_login", false)) {
+            // User already passed login, continue as normal
+            setContentView(R.layout.activity_main);
+            db = FirebaseFirestore.getInstance();
+            initViews();
+            setupRecyclerView();
+            setupSearch();
+            setupFilters();
+            loadDestinations();
+            setupBottomNavigation();
+        } else {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        }
     }
 
     private void initViews() {
@@ -121,19 +130,14 @@ public class MainActivity extends AppCompatActivity {
             Chip chip = new Chip(this);
             chip.setText(category);
             chip.setCheckable(true);
+            chip.setOnClickListener(v -> {
+                Chip clickedChip = (Chip) v;
+                selectedCategory = clickedChip.isChecked() ? clickedChip.getText().toString() : "";
+                filterDestinations();
+            });
             categoryChipGroup.addView(chip);
         }
-        categoryChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty()) {
-                selectedCategory = "";
-            } else {
-                Chip checkedChip = group.findViewById(checkedIds.get(0));
-                if (checkedChip != null) {
-                    selectedCategory = checkedChip.getText().toString();
-                }
-            }
-            filterDestinations();
-        });
+        // Remove setOnCheckedStateChangeListener to avoid double filtering
     }
 
     private void loadDestinations() {
@@ -151,6 +155,10 @@ public class MainActivity extends AppCompatActivity {
                         filterDestinations();
                     } else {
                         Toast.makeText(this, "Error loading destinations", Toast.LENGTH_SHORT).show();
+                        // Log the error for debugging
+                        if (task.getException() != null) {
+                            task.getException().printStackTrace();
+                        }
                     }
                 });
     }
