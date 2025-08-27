@@ -16,5 +16,12 @@
         android:id="@+id/nav_add_destination"
         android:title="Add Destination"
         android:icon="@drawable/ic_add" />
+    <item
+        android:id="@+id/nav_trip_advice_management"
+        android:title="Manage Trip Advice"
+        android:icon="@drawable/ic_menu" />
+    <item
+        android:id="@+id/nav_logout"
+        android:title="Logout"
+        android:icon="@android:drawable/ic_lock_power_off" />
 </menu>
-

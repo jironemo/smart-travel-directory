@@ -101,9 +101,16 @@ public class DestinationDetailActivity extends AppCompatActivity {
                     Destination d = documentSnapshot.toObject(Destination.class);
                     if (d != null) {
                         updateUI(d);
+                    } else {
+                        android.widget.Toast.makeText(this, "Destination not found.", android.widget.Toast.LENGTH_SHORT).show();
+                        finish();
                     }
                 })
-                .addOnFailureListener(e -> Log.e("DESID", "Error fetching destination", e));
+                .addOnFailureListener(e -> {
+                    Log.e("DESID", "Error fetching destination", e);
+                    android.widget.Toast.makeText(this, "Failed to load destination.", android.widget.Toast.LENGTH_LONG).show();
+                    finish();
+                });
     }
 
 
@@ -149,7 +156,7 @@ public class DestinationDetailActivity extends AppCompatActivity {
                 String comment = reviewCommentEditText.getText().toString().trim();
                 float rating = reviewRatingBar.getRating();
                 if (comment.isEmpty() || rating == 0) {
-                    // Optionally show error
+                    android.widget.Toast.makeText(this, "Please enter a comment and rating.", android.widget.Toast.LENGTH_SHORT).show();
                     return;
                 }
                 HashMap<String, Object> reviewData = new HashMap<>();
@@ -158,13 +165,11 @@ public class DestinationDetailActivity extends AppCompatActivity {
                 reviewData.put("destination_id", db.collection("destinations").document(destinationId));
                 reviewData.put("rating", rating);
                 reviewData.put("updated_at", com.google.firebase.Timestamp.now());
-                Log.i("USERID", "User ID: " + User.getCurrentUser().getId());
                 String userId = User.getCurrentUser().getId();
                 if (userId == null || userId.isEmpty()) {
-                    // Try to get userId from Firestore document reference
                     userId = User.getCurrentUser().getEmail(); // fallback to email if no id
                     if (userId == null || userId.isEmpty()) {
-                        // Optionally show error or prevent review submission
+                        android.widget.Toast.makeText(this, "User ID not found.", android.widget.Toast.LENGTH_SHORT).show();
                         return;
                     }
                 }
@@ -174,6 +179,11 @@ public class DestinationDetailActivity extends AppCompatActivity {
                         reviewCommentEditText.setText("");
                         reviewRatingBar.setRating(0);
                         loadReviews();
+                        android.widget.Toast.makeText(this, "Review submitted.", android.widget.Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        android.widget.Toast.makeText(this, "Failed to submit review.", android.widget.Toast.LENGTH_LONG).show();
+                        Log.e("ReviewSubmit", "Error submitting review", e);
                     });
             });
         } else {
@@ -182,10 +192,14 @@ public class DestinationDetailActivity extends AppCompatActivity {
     }
 
     private void checkFavouriteState() {
-        String userId = User.getCurrentUser() != null ? User.getCurrentUser().getId() : "guest";
+        DocumentReference userRef = null;
+        if (User.getCurrentUser() != null && User.getCurrentUser().getId() != null) {
+            userRef = db.collection("users").document(User.getCurrentUser().getId());
+        }
+        DocumentReference destinationRef = db.collection("destinations").document(destinationId);
         db.collection("favourites")
-                .whereEqualTo("destination_id", destinationId)
-                .whereEqualTo("user_id", userId)
+                .whereEqualTo("destination_id", destinationRef)
+                .whereEqualTo("user_id", userRef)
                 .get()
                 .addOnSuccessListener(query -> {
                     if (!query.isEmpty()) {
@@ -211,15 +225,23 @@ public class DestinationDetailActivity extends AppCompatActivity {
     }
 
     private void addToFavourites() {
-        String userId = User.getCurrentUser() != null ? User.getCurrentUser().getId() : "guest";
+        DocumentReference userRef = null;
+        if (User.getCurrentUser() != null && User.getCurrentUser().getId() != null) {
+            userRef = db.collection("users").document(User.getCurrentUser().getId());
+        }
+        DocumentReference destinationRef = db.collection("destinations").document(destinationId);
         HashMap<String, Object> fav = new HashMap<>();
-        fav.put("destination_id", destinationId);
-        fav.put("user_id", userId);
+        fav.put("destination_id", destinationRef);
+        fav.put("user_id", userRef);
         db.collection("favourites").add(fav)
                 .addOnSuccessListener(docRef -> {
                     isFavourite = true;
                     favouriteDocId = docRef.getId();
                     updateFavouriteButton();
+                })
+                .addOnFailureListener(e -> {
+                    android.widget.Toast.makeText(this, "Failed to add to favourites.", android.widget.Toast.LENGTH_LONG).show();
+                    Log.e("Favourites", "Error adding favourite", e);
                 });
     }
 
@@ -230,6 +252,10 @@ public class DestinationDetailActivity extends AppCompatActivity {
                         isFavourite = false;
                         favouriteDocId = null;
                         updateFavouriteButton();
+                    })
+                    .addOnFailureListener(e -> {
+                        android.widget.Toast.makeText(this, "Failed to remove from favourites.", android.widget.Toast.LENGTH_LONG).show();
+                        Log.e("Favourites", "Error removing favourite", e);
                     });
         }
     }

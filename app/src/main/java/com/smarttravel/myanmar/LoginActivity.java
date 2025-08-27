@@ -1,6 +1,7 @@
 package com.smarttravel.myanmar;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -19,6 +20,30 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         db = FirebaseFirestore.getInstance();
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        String savedUserId = prefs.getString("user_id", null);
+        if (savedUserId != null) {
+            db.collection("users").document(savedUserId).get()
+                .addOnSuccessListener(doc -> {
+                    User user = doc.toObject(User.class);
+                    if (user != null) {
+                        user.setId(doc.getId());
+                        User.setCurrentUser(user);
+                        String userType = doc.getString("user_type");
+                        Intent intent;
+                        if ("ADMIN".equalsIgnoreCase(userType)) {
+                            intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
+                        } else {
+                            intent = new Intent(LoginActivity.this, MainActivity.class);
+                        }
+                        intent.putExtra("from_login", true);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                        return;
+                    }
+                });
+        }
 
         Button guestButton = findViewById(R.id.btn_login_guest);
         guestButton.setOnClickListener(new View.OnClickListener() {
@@ -30,7 +55,6 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
         Button emailLoginButton = findViewById(R.id.btn_login_email);
         EditText emailEditText = findViewById(R.id.et_email);
         EditText passwordEditText = findViewById(R.id.et_password);
@@ -47,15 +71,18 @@ public class LoginActivity extends AppCompatActivity {
                     .get()
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful() && !task.getResult().isEmpty()) {
-                            // Login success
                             User user = null;
                             for (com.google.firebase.firestore.QueryDocumentSnapshot doc : task.getResult()) {
                                 user = doc.toObject(User.class);
+                                String userType = doc.getString("user_type");
                                 if (user != null) {
                                     user.setId(doc.getId());
-                                    // Check user_type and redirect accordingly
-                                    String userType = doc.getString("user_type");
+                                    user.setUserType(userType); // Set userType from firebase property
                                     User.setCurrentUser(user);
+                                    // Save user id for persistent login
+                                    SharedPreferences.Editor editor = getSharedPreferences("user_prefs", MODE_PRIVATE).edit();
+                                    editor.putString("user_id", user.getId());
+                                    editor.apply();
                                     Intent intent;
                                     if ("ADMIN".equalsIgnoreCase(userType)) {
                                         intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
@@ -72,6 +99,11 @@ public class LoginActivity extends AppCompatActivity {
                             Toast.makeText(LoginActivity.this, "Invalid email or password", Toast.LENGTH_SHORT).show();
                         }
                     });
+        });
+        Button goRegisterButton = findViewById(R.id.btn_go_register);
+        goRegisterButton.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
         });
     }
 }

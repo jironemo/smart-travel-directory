@@ -2,6 +2,8 @@ package com.smarttravel.myanmar;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -83,7 +85,6 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Destination destination = destinations.get(position);
-
         holder.nameTextView.setText(destination.getName());
         holder.descriptionTextView.setText(destination.getDescription());
         holder.locationTextView.setText(destination.getLocation());
@@ -98,17 +99,28 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
                     Log.i("DEBUG","Clicked on destination: " + destination.getName());
                 }
         );
-        disableSslVerification();
-        // Load image with Glide
-        Glide.with(context)
+        // Show popular badge
+        holder.popularBadge.setVisibility(destination.isPopular() ? View.VISIBLE : View.GONE);
+        // Display base64 image if available, else fallback to imageUrl
+        String base64 = destination.getImageUrl();
+        if (base64 != null && !base64.isEmpty()) {
+            try {
+                byte[] imageBytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                holder.imageView.setImageBitmap(bitmap);
+            } catch (Exception e) {
+                holder.imageView.setImageResource(R.drawable.placeholder_image);
+            }
+        } else if (destination.getImageUrl() != null && !destination.getImageUrl().isEmpty()) {
+            disableSslVerification();
+            Glide.with(context)
                 .load(destination.getImageUrl())
                 .placeholder(R.drawable.placeholder_image)
                 .error(R.drawable.placeholder_image)
                 .into(holder.imageView);
-
-        // Show popular badge
-        holder.popularBadge.setVisibility(destination.isPopular() ? View.VISIBLE : View.GONE);
-
+        } else {
+            holder.imageView.setImageResource(R.drawable.placeholder_image);
+        }
     }
 
     @Override

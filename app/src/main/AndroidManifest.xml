@@ -39,7 +39,21 @@
             android:exported="false" />
         <activity android:name="com.smarttravel.myanmar.FavouritesActivity"
             android:exported="false" />
-        <activity android:name=".AdminDashboardActivity" />
+        <activity android:name="com.smarttravel.myanmar.AdminDashboardActivity" />
+        <activity android:name="com.smarttravel.myanmar.EditDestinationActivity" />
+        <activity android:name="com.smarttravel.myanmar.RegisterActivity" />
+        <activity android:name="com.smarttravel.myanmar.TripDetailsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartTravelDirectory" />
+        <activity android:name="com.smarttravel.myanmar.TripAdviceManagementActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartTravelDirectory" />
+        <activity android:name="com.smarttravel.myanmar.AddTripAdviceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartTravelDirectory" />
     </application>
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
 </manifest>

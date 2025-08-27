@@ -53,4 +53,15 @@
         android:textSize="18sp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_go_register"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Register"
+        android:backgroundTint="@color/primary"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp" />
 </LinearLayout>

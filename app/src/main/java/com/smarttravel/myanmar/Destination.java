@@ -9,6 +9,7 @@ public class Destination {
     private double rating;
     private String location;
     private boolean isPopular;
+    private boolean selected;
 
     public Destination() {}
 
@@ -21,6 +22,7 @@ public class Destination {
         this.rating = rating;
         this.location = location;
         this.isPopular = isPopular;
+        this.id = id;
     }
 
     // Getters and setters
@@ -48,4 +50,7 @@ public class Destination {
 
     public boolean isPopular() { return isPopular; }
     public void setPopular(boolean popular) { isPopular = popular; }
+
+    public boolean isSelected() { return selected; }
+    public void setSelected(boolean selected) { this.selected = selected; }
 }

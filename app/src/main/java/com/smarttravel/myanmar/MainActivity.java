@@ -2,13 +2,8 @@
 package com.smarttravel.myanmar;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,8 +11,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -32,42 +25,29 @@ public class MainActivity extends AppCompatActivity {
     private List<Destination> destinations;
     private List<Destination> filteredDestinations;
 
-    private EditText searchEditText;
-    private Spinner divisionSpinner;
-    private ChipGroup categoryChipGroup;
-
-    private String selectedLocation = "";
-    private String selectedCategory = "";
-    private String searchQuery = "";
+    private TextView noResultsTextView;
+    private androidx.swiperefreshlayout.widget.SwipeRefreshLayout swipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Only show LoginActivity if this is the launcher activity
-        if (getIntent().getBooleanExtra("from_login", false)) {
-            // User already passed login, continue as normal
-            setContentView(R.layout.activity_main);
-            db = FirebaseFirestore.getInstance();
-            initViews();
-            setupRecyclerView();
-            setupSearch();
-            setupFilters();
-            loadDestinations();
-            setupBottomNavigation();
-        } else {
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
-            finish();
-        }
+        // Keep current launcher/login flow
+        setContentView(R.layout.activity_main);
+        db = FirebaseFirestore.getInstance();
+        initViews();
+        setupRecyclerView();
+        loadDestinations();
+        setupBottomNavigation();
     }
 
     private void initViews() {
-        searchEditText = findViewById(R.id.searchEditText);
-        divisionSpinner = findViewById(R.id.divisionSpinner);
-        categoryChipGroup = findViewById(R.id.categoryChipGroup);
         recyclerView = findViewById(R.id.recyclerView);
-
+        noResultsTextView = findViewById(R.id.noResultsTextView);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            loadDestinations();
+            swipeRefreshLayout.setRefreshing(false);
+        });
     }
 
     private void setupRecyclerView() {
@@ -76,68 +56,6 @@ public class MainActivity extends AppCompatActivity {
         adapter = new DestinationAdapter(this, filteredDestinations);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
-    }
-
-    private void setupSearch() {
-        searchEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                searchQuery = s.toString().toLowerCase();
-                filterDestinations();
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-    }
-
-    private void setupFilters() {
-        // Setup division spinner
-        List<String> divisions = new ArrayList<>();
-        divisions.add("All Divisions");
-        db.collection("destinations")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        String location = document.getString("location");
-                        if (location != null && !divisions.contains(location)) {
-                            divisions.add(location);
-                        }
-                    }
-                    ArrayAdapter<String> divisionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, divisions);
-                    divisionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    divisionSpinner.setAdapter(divisionAdapter);
-                });
-
-        divisionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedLocation = position == 0 ? "" : divisions.get(position);
-                filterDestinations();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        // Setup category chips (single selection)
-        categoryChipGroup.setSingleSelection(true);
-        String[] categories = {"Temple", "Pagoda", "Nature", "Cultural", "Adventure", "Food", "Shopping"};
-        for (String category : categories) {
-            Chip chip = new Chip(this);
-            chip.setText(category);
-            chip.setCheckable(true);
-            chip.setOnClickListener(v -> {
-                Chip clickedChip = (Chip) v;
-                selectedCategory = clickedChip.isChecked() ? clickedChip.getText().toString() : "";
-                filterDestinations();
-            });
-            categoryChipGroup.addView(chip);
-        }
-        // Remove setOnCheckedStateChangeListener to avoid double filtering
     }
 
     private void loadDestinations() {
@@ -155,34 +73,17 @@ public class MainActivity extends AppCompatActivity {
                         filterDestinations();
                     } else {
                         Toast.makeText(this, "Error loading destinations", Toast.LENGTH_SHORT).show();
-                        // Log the error for debugging
-                        if (task.getException() != null) {
-                            task.getException().printStackTrace();
-                        }
+                        if (task.getException() != null) task.getException().printStackTrace();
                     }
                 });
     }
 
     private void filterDestinations() {
+        // No search/filters on Home: show all
         filteredDestinations.clear();
-
-        for (Destination destination : destinations) {
-            boolean matchesSearch = searchQuery.isEmpty() ||
-                    destination.getName().toLowerCase().contains(searchQuery) ||
-                    destination.getDescription().toLowerCase().contains(searchQuery);
-
-            boolean matchesLocation = selectedLocation.isEmpty() ||
-                    destination.getLocation().equals(selectedLocation);
-
-            boolean matchesCategory = selectedCategory.isEmpty() ||
-                    destination.getCategory().equals(selectedCategory);
-
-            if (matchesSearch && matchesLocation && matchesCategory) {
-                filteredDestinations.add(destination);
-            }
-        }
-
+        filteredDestinations.addAll(destinations);
         adapter.notifyDataSetChanged();
+        noResultsTextView.setVisibility(filteredDestinations.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     private void setupBottomNavigation() {
@@ -190,22 +91,17 @@ public class MainActivity extends AppCompatActivity {
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                // Already on home, do nothing
                 return true;
             } else if (id == R.id.nav_search) {
-                bottomNav.setSelectedItemId(R.id.nav_home);
                 startActivity(new Intent(this, SearchActivity.class));
                 return true;
             } else if (id == R.id.nav_trip_advice) {
-                bottomNav.setSelectedItemId(R.id.nav_home);
                 startActivity(new Intent(this, TripAdviceActivity.class));
                 return true;
             } else if (id == R.id.nav_favorites) {
-                bottomNav.setSelectedItemId(R.id.nav_home);
                 startActivity(new Intent(this, FavouritesActivity.class));
                 return true;
             } else if (id == R.id.nav_profile) {
-                bottomNav.setSelectedItemId(R.id.nav_home);
                 startActivity(new Intent(this, ProfileActivity.class));
                 return true;
             }
