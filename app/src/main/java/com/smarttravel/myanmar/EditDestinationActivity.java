@@ -10,6 +10,7 @@ import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -23,13 +24,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 public class EditDestinationActivity extends AppCompatActivity {
-    private EditText nameEditText, locationEditText, categoryEditText, descriptionEditText;
+    private EditText nameEditText, locationEditText, descriptionEditText;
     private ImageView imagePreview;
     private Button saveButton;
     private String destinationId;
     private FirebaseFirestore db;
     private String base64Image;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private Spinner categorySpinner;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -39,7 +41,7 @@ public class EditDestinationActivity extends AppCompatActivity {
         destinationId = getIntent().getStringExtra("destination_id");
         nameEditText = findViewById(R.id.editDestinationNameEditText);
         locationEditText = findViewById(R.id.editDestinationLocationEditText);
-        categoryEditText = findViewById(R.id.editDestinationCategoryEditText);
+        categorySpinner = findViewById(R.id.editDestinationCategorySpinner);
         descriptionEditText = findViewById(R.id.editDestinationDescriptionEditText);
         imagePreview = findViewById(R.id.editDestinationImagePreview);
         saveButton = findViewById(R.id.btnSaveDestination);
@@ -73,7 +75,7 @@ public class EditDestinationActivity extends AppCompatActivity {
                 if (doc.exists()) {
                     nameEditText.setText(doc.getString("name"));
                     locationEditText.setText(doc.getString("location"));
-                    categoryEditText.setText(doc.getString("category"));
+                    categorySpinner.setSelection(getCategoryIndex(doc.getString("category")));
                     descriptionEditText.setText(doc.getString("description"));
                     String base64 = doc.getString("imageUrl");
                     if (base64 != null && !base64.isEmpty()) {
@@ -101,7 +103,7 @@ public class EditDestinationActivity extends AppCompatActivity {
     private void saveDestination() {
         String name = nameEditText.getText().toString().trim();
         String location = locationEditText.getText().toString().trim();
-        String category = categoryEditText.getText().toString().trim();
+        String category = categorySpinner.getSelectedItem().toString();
         String description = descriptionEditText.getText().toString().trim();
         if (name.isEmpty() || location.isEmpty() || category.isEmpty() || description.isEmpty()) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
@@ -116,5 +118,13 @@ public class EditDestinationActivity extends AppCompatActivity {
                    "imageUrl", imageToSave)
             .addOnSuccessListener(aVoid -> Toast.makeText(this, "Destination updated!", Toast.LENGTH_SHORT).show())
             .addOnFailureListener(e -> Toast.makeText(this, "Failed to update destination", Toast.LENGTH_SHORT).show());
+    }
+
+    private int getCategoryIndex(String category) {
+        String[] categories = getResources().getStringArray(R.array.destination_categories);
+        for (int i = 0; i < categories.length; i++) {
+            if (categories[i].equalsIgnoreCase(category)) return i;
+        }
+        return 0;
     }
 }

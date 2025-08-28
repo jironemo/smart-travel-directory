@@ -209,11 +209,6 @@ public class FavouritesActivity extends AppCompatActivity {
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 return true;
-            } else if (id == R.id.nav_trip_advice) {
-                Intent intent = new Intent(this, TripAdviceActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                return true;
             } else if (id == R.id.nav_favorites) {
                 // Already on favourites
                 return true;

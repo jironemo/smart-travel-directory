@@ -58,6 +58,20 @@ public class SearchActivity extends AppCompatActivity {
     private void initViews() {
         recyclerView = findViewById(R.id.recyclerView);
         searchEditText = findViewById(R.id.searchEditText);
+        // Hide keyboard when user presses enter
+        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH ||
+                actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE ||
+                (event != null && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER)) {
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
+                }
+                searchEditText.clearFocus();
+                return true;
+            }
+            return false;
+        });
         divisionSpinner = findViewById(R.id.divisionSpinner);
         categoryChipGroup = findViewById(R.id.categoryChipGroup);
         noResultsTextView = findViewById(R.id.noResultsTextView);
@@ -89,7 +103,7 @@ public class SearchActivity extends AppCompatActivity {
 
     private void setupFilters() {
         List<String> divisions = new ArrayList<>();
-        divisions.add("All Divisions");
+        divisions.add("All Locations");
         db.collection("destinations").get()
             .addOnSuccessListener(snaps -> {
                 for (QueryDocumentSnapshot document : snaps) {
@@ -103,8 +117,8 @@ public class SearchActivity extends AppCompatActivity {
                 divisionSpinner.setAdapter(divisionAdapter);
             })
             .addOnFailureListener(e -> {
-                android.widget.Toast.makeText(this, "Failed to load divisions.", android.widget.Toast.LENGTH_LONG).show();
-                android.util.Log.e("SearchActivity", "Error fetching divisions", e);
+                android.widget.Toast.makeText(this, "Failed to load locations.", android.widget.Toast.LENGTH_LONG).show();
+                android.util.Log.e("SearchActivity", "Error fetching locations", e);
             });
 
         divisionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -116,7 +130,7 @@ public class SearchActivity extends AppCompatActivity {
         });
 
         categoryChipGroup.setSingleSelection(true);
-        String[] categories = {"Temple", "Pagoda", "Nature", "Cultural", "Adventure", "Food", "Shopping"};
+        String[] categories = getResources().getStringArray(R.array.destination_categories);
         for (String category : categories) {
             Chip chip = new Chip(this);
             chip.setText(category);
@@ -188,10 +202,6 @@ public class SearchActivity extends AppCompatActivity {
                 startActivity(intent);
                 return true;
             } else if (id == R.id.nav_search) {
-                return true;
-            } else if (id == R.id.nav_trip_advice) {
-                Intent intent = new Intent(this, TripAdviceActivity.class);
-                startActivity(intent);
                 return true;
             } else if (id == R.id.nav_favorites) {
                 Intent intent = new Intent(this, FavouritesActivity.class);

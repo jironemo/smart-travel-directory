@@ -35,10 +35,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                     fragment = new ReviewsListFragment();
                 } else if (id == R.id.nav_add_destination) {
                     fragment = new AddDestinationFragment();
-                } else if (id == R.id.nav_trip_advice_management) {
-                    startActivity(new android.content.Intent(this, TripAdviceManagementActivity.class));
-                    drawerLayout.closeDrawers();
-                    return true;
                 }
                 if (fragment != null) {
                     getSupportFragmentManager().beginTransaction()

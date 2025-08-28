@@ -31,12 +31,25 @@ public class ReviewsListFragment extends Fragment {
                 reviews.clear();
                 for (com.google.firebase.firestore.QueryDocumentSnapshot document : queryDocumentSnapshots) {
                     Review review = document.toObject(Review.class);
+                    boolean show = document.contains("show") ? document.getBoolean("show") : true;
+                    String reviewId = document.getId();
                     String userId = review.getUser_id().getId();
+                    String destinationName = "Unknown";
                     db.collection("users").document(userId).get()
                         .addOnSuccessListener(userDoc -> {
                             String username = userDoc.exists() ? userDoc.getString("username") : "Unknown";
-                            reviews.add(new ReviewDisplay(review, username));
-                            adapter.notifyDataSetChanged();
+                            // Fetch destination name
+                            review.getDestination_id().get().addOnSuccessListener(destDoc -> {
+                                if (destDoc.exists()) {
+                                    String destName = destDoc.getString("name");
+                                    // Add all reviews for admin, regardless of show flag
+                                    reviews.add(new ReviewDisplay(review, username, destName, show, reviewId));
+                                } else {
+                                    reviews.add(new ReviewDisplay(review, username, destinationName, show, reviewId));
+                                }
+                                // Notify adapter after each review is added
+                                adapter.notifyDataSetChanged();
+                            });
                         });
                 }
             })

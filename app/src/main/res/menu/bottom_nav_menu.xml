@@ -8,10 +8,11 @@
         android:id="@+id/nav_search"
         android:icon="@drawable/ic_search_nav"
         android:title="Search" />
-    <item
+    <!-- Remove Trip Advice from bottom navigation -->
+    <!-- <item
         android:id="@+id/nav_trip_advice"
         android:icon="@drawable/ic_trip_advice"
-        android:title="Trip Advice" />
+        android:title="Trip Advice" /> -->
     <item
         android:id="@+id/nav_favorites"
         android:icon="@drawable/ic_favorite_nav"

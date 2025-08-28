@@ -3,13 +3,13 @@ package com.smarttravel.myanmar;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
@@ -46,14 +46,11 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         Button guestButton = findViewById(R.id.btn_login_guest);
-        guestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                intent.putExtra("from_login", true);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-            }
+        guestButton.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.putExtra("from_login", true);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
         });
         Button emailLoginButton = findViewById(R.id.btn_login_email);
         EditText emailEditText = findViewById(R.id.et_email);
@@ -71,18 +68,25 @@ public class LoginActivity extends AppCompatActivity {
                     .get()
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful() && !task.getResult().isEmpty()) {
-                            User user = null;
+                            User user;
                             for (com.google.firebase.firestore.QueryDocumentSnapshot doc : task.getResult()) {
                                 user = doc.toObject(User.class);
                                 String userType = doc.getString("user_type");
-                                if (user != null) {
-                                    user.setId(doc.getId());
-                                    user.setUserType(userType); // Set userType from firebase property
-                                    User.setCurrentUser(user);
-                                    // Save user id for persistent login
-                                    SharedPreferences.Editor editor = getSharedPreferences("user_prefs", MODE_PRIVATE).edit();
-                                    editor.putString("user_id", user.getId());
-                                    editor.apply();
+                                user.setId(doc.getId());
+                                user.setUserType(userType); // Set userType from firebase property
+                                User.setCurrentUser(user);
+                                // Save user id for persistent login
+                                SharedPreferences.Editor editor = getSharedPreferences("user_prefs", MODE_PRIVATE).edit();
+                                editor.putString("user_id", user.getId());
+                                editor.apply();
+                                // Show custom success dialog with animation, no buttons, auto-dismiss after 1 second
+                                android.app.AlertDialog successDialog = new android.app.AlertDialog.Builder(LoginActivity.this)
+                                    .setView(getLayoutInflater().inflate(R.layout.dialog_success, null))
+                                    .setCancelable(false)
+                                    .create();
+                                successDialog.show();
+                                new android.os.Handler().postDelayed(() -> {
+                                    successDialog.dismiss();
                                     Intent intent;
                                     if ("ADMIN".equalsIgnoreCase(userType)) {
                                         intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
@@ -92,8 +96,9 @@ public class LoginActivity extends AppCompatActivity {
                                     intent.putExtra("from_login", true);
                                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                     startActivity(intent);
-                                    return;
-                                }
+                                    finish();
+                                }, 1000);
+                                return;
                             }
                         } else {
                             Toast.makeText(LoginActivity.this, "Invalid email or password", Toast.LENGTH_SHORT).show();

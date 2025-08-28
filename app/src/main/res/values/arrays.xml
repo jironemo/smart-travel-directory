@@ -1,0 +1,9 @@
+<resources>
+    <string-array name="destination_categories">
+        <item>Nature</item>
+        <item>Food</item>
+        <item>Cultural Heritage</item>
+        <item>Accommodations</item>
+    </string-array>
+</resources>
+

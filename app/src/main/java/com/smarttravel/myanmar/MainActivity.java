@@ -95,9 +95,6 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_search) {
                 startActivity(new Intent(this, SearchActivity.class));
                 return true;
-            } else if (id == R.id.nav_trip_advice) {
-                startActivity(new Intent(this, TripAdviceActivity.class));
-                return true;
             } else if (id == R.id.nav_favorites) {
                 startActivity(new Intent(this, FavouritesActivity.class));
                 return true;

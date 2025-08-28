@@ -137,6 +137,9 @@ public class DestinationDetailActivity extends AppCompatActivity {
         categoryTextView.setText(destination.getCategory());
         locationTextView.setText(destination.getLocation());
         ratingTextView.setText(String.format("%.1f", destination.getRating()));
+        // Make links in description clickable
+        descriptionTextView.setAutoLinkMask(android.text.util.Linkify.WEB_URLS);
+        descriptionTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
 
         // Hide favourite button if user is not logged in
         if (User.getCurrentUser() == null) {
@@ -282,18 +285,34 @@ public class DestinationDetailActivity extends AppCompatActivity {
                                  final int[] loadedCount = {0};
                                  for (QueryDocumentSnapshot doc : querySnapshot) {
                                      Review review = doc.toObject(Review.class);
-                                     String userId = review.getUser_id().getId();
-                                     db.collection("users").document(userId).get()
+                                     boolean show = doc.contains("show") ? doc.getBoolean("show") : true;
+                                     if (show) { // Only show reviews with show==true or missing
+                                         String userId = review.getUser_id().getId();
+                                         String destinationName = "Unknown";
+                                         String reviewId = doc.getId();
+                                         db.collection("users").document(userId).get()
                                              .addOnSuccessListener(userDoc -> {
                                                  String username = userDoc.exists() ? userDoc.getString("username") : "Unknown";
-                                                 tempList.add(new ReviewDisplay(review, username));
-                                                 loadedCount[0]++;
-                                                 if (loadedCount[0] == totalReviews) {
-                                                     reviewDisplayList.clear();
-                                                     reviewDisplayList.addAll(tempList);
-                                                     reviewsAdapter.notifyDataSetChanged();
-                                                 }
+                                                 // Fetch destination name
+                                                 review.getDestination_id().get().addOnSuccessListener(destDoc -> {
+                                                     String destName = destDoc.exists() ? destDoc.getString("name") : destinationName;
+                                                     tempList.add(new ReviewDisplay(review, username, destName, show, reviewId));
+                                                     loadedCount[0]++;
+                                                     if (loadedCount[0] == totalReviews) {
+                                                         reviewDisplayList.clear();
+                                                         reviewDisplayList.addAll(tempList);
+                                                         reviewsAdapter.notifyDataSetChanged();
+                                                     }
+                                                 });
                                              });
+                                     } else {
+                                         loadedCount[0]++;
+                                         if (loadedCount[0] == totalReviews) {
+                                             reviewDisplayList.clear();
+                                             reviewDisplayList.addAll(tempList);
+                                             reviewsAdapter.notifyDataSetChanged();
+                                         }
+                                     }
                                  }
                              }
                          });

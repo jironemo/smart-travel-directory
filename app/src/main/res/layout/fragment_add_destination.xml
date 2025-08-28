@@ -38,16 +38,18 @@
                 android:hint="Location" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/destinationCategoryEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Category" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:text="Category"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:layout_marginBottom="4dp" />
+        <Spinner
+            android:id="@+id/destinationCategorySpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/destination_categories"
+            android:layout_marginBottom="12dp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"

@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,7 +33,7 @@ public class AddDestinationFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_add_destination, container, false);
         EditText nameEditText = view.findViewById(R.id.destinationNameEditText);
         EditText locationEditText = view.findViewById(R.id.destinationLocationEditText);
-        EditText categoryEditText = view.findViewById(R.id.destinationCategoryEditText);
+        Spinner categorySpinner = view.findViewById(R.id.destinationCategorySpinner);
         EditText descriptionEditText = view.findViewById(R.id.destinationDescriptionEditText);
         Button submitButton = view.findViewById(R.id.btnSubmitDestination);
         Button selectImageButton = view.findViewById(R.id.btnSelectImage);
@@ -56,7 +57,7 @@ public class AddDestinationFragment extends Fragment {
         submitButton.setOnClickListener(v -> {
             String name = nameEditText.getText().toString().trim();
             String location = locationEditText.getText().toString().trim();
-            String category = categoryEditText.getText().toString().trim();
+            String category = categorySpinner.getSelectedItem().toString();
             String description = descriptionEditText.getText().toString().trim();
             if (name.isEmpty() || location.isEmpty() || category.isEmpty() || description.isEmpty() || imageUri == null) {
                 Toast.makeText(getContext(), "Please fill all fields and select an image", Toast.LENGTH_SHORT).show();
@@ -86,7 +87,7 @@ public class AddDestinationFragment extends Fragment {
                     Toast.makeText(getContext(), "Destination added!", Toast.LENGTH_SHORT).show();
                     nameEditText.setText("");
                     locationEditText.setText("");
-                    categoryEditText.setText("");
+                    categorySpinner.setSelection(0); // Reset to first category
                     descriptionEditText.setText("");
                     imagePreview.setImageResource(android.R.drawable.ic_menu_gallery);
                     imageUri = null;

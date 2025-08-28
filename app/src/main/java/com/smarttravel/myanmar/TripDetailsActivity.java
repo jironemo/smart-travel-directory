@@ -112,9 +112,6 @@ public class TripDetailsActivity extends AppCompatActivity {
             } else if (id == R.id.nav_search) {
                 startActivity(new android.content.Intent(this, SearchActivity.class));
                 return true;
-            } else if (id == R.id.nav_trip_advice) {
-                startActivity(new android.content.Intent(this, TripAdviceActivity.class));
-                return true;
             } else if (id == R.id.nav_favorites) {
                 startActivity(new android.content.Intent(this, FavouritesActivity.class));
                 return true;
@@ -124,7 +121,7 @@ public class TripDetailsActivity extends AppCompatActivity {
             }
             return false;
         });
-        bottomNav.getMenu().findItem(R.id.nav_trip_advice).setChecked(true);
+
     }
 
     @Override

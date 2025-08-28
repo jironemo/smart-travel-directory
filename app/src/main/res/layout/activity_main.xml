@@ -9,8 +9,10 @@
     tools:context="com.smarttravel.myanmar.MainActivity">
 
     <LinearLayout
+        android:id="@+id/mainContentContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:orientation="vertical">
 
         <!-- Simple header without search -->

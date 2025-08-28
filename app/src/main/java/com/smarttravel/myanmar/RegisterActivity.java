@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class RegisterActivity extends AppCompatActivity {
@@ -78,11 +79,20 @@ public class RegisterActivity extends AppCompatActivity {
                                 SharedPreferences.Editor editor = getSharedPreferences("user_prefs", MODE_PRIVATE).edit();
                                 editor.putString("user_id", user.getId());
                                 editor.apply();
-                                Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
-                                intent.putExtra("from_login", true);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intent);
-                                finish();
+                                // Show custom success dialog with animation, no buttons, auto-dismiss after 1 second
+                                android.app.AlertDialog successDialog = new android.app.AlertDialog.Builder(RegisterActivity.this)
+                                    .setView(getLayoutInflater().inflate(R.layout.dialog_success, null))
+                                    .setCancelable(false)
+                                    .create();
+                                successDialog.show();
+                                new android.os.Handler().postDelayed(() -> {
+                                    successDialog.dismiss();
+                                    Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                                    intent.putExtra("from_login", true);
+                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                    startActivity(intent);
+                                    finish();
+                                }, 1000);
                             })
                             .addOnFailureListener(e -> {
                                 Toast.makeText(RegisterActivity.this, "Registration failed", Toast.LENGTH_SHORT).show();
