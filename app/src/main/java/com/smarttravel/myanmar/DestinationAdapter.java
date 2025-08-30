@@ -87,7 +87,7 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
         Destination destination = destinations.get(position);
         holder.nameTextView.setText(destination.getName());
         holder.descriptionTextView.setText(destination.getDescription());
-        holder.locationTextView.setText(destination.getLocation());
+        holder.locationTextView.setText(destination.getLocationName());
         holder.categoryTextView.setText(destination.getCategory());
         holder.ratingTextView.setText(String.format("%.1f", destination.getRating()));
         holder.destinationId = destination.getId();
@@ -101,23 +101,22 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
         );
         // Show popular badge
         holder.popularBadge.setVisibility(destination.isPopular() ? View.VISIBLE : View.GONE);
-        // Display base64 image if available, else fallback to imageUrl
-        String base64 = destination.getImageUrl();
-        if (base64 != null && !base64.isEmpty()) {
+        // Display first image from the list (base64 or with prefix)
+        List<String> imageList = destination.getImageUrl();
+        String firstImage = (imageList != null && !imageList.isEmpty()) ? imageList.get(0) : null;
+        if (firstImage != null && !firstImage.isEmpty()) {
             try {
-                byte[] imageBytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
+                // Strip base64 prefix if present
+                if (firstImage.startsWith("data:image")) {
+                    int commaIndex = firstImage.indexOf(",");
+                    if (commaIndex != -1) firstImage = firstImage.substring(commaIndex + 1);
+                }
+                byte[] imageBytes = android.util.Base64.decode(firstImage, android.util.Base64.DEFAULT);
                 Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
                 holder.imageView.setImageBitmap(bitmap);
             } catch (Exception e) {
                 holder.imageView.setImageResource(R.drawable.placeholder_image);
             }
-        } else if (destination.getImageUrl() != null && !destination.getImageUrl().isEmpty()) {
-            disableSslVerification();
-            Glide.with(context)
-                .load(destination.getImageUrl())
-                .placeholder(R.drawable.placeholder_image)
-                .error(R.drawable.placeholder_image)
-                .into(holder.imageView);
         } else {
             holder.imageView.setImageResource(R.drawable.placeholder_image);
         }

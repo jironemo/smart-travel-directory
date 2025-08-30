@@ -46,11 +46,21 @@ public class ProfileActivity extends AppCompatActivity {
         }
         createdAtTextView.setPadding(0, 8, 0, 16);
         if (profilePicture != null && !profilePicture.isEmpty()) {
-            Glide.with(this)
-                    .load(profilePicture)
-                    .placeholder(R.drawable.ic_profile)
-                    .error(R.drawable.ic_profile)
-                    .into(profileImageView);
+            if (profilePicture.startsWith("/9j") || profilePicture.startsWith("iVBOR")) { // base64 JPEG/PNG
+                try {
+                    byte[] imageBytes = android.util.Base64.decode(profilePicture, android.util.Base64.DEFAULT);
+                    android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    profileImageView.setImageBitmap(bitmap);
+                } catch (Exception e) {
+                    profileImageView.setImageResource(R.drawable.ic_profile);
+                }
+            } else {
+                Glide.with(this)
+                        .load(profilePicture)
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .into(profileImageView);
+            }
         } else {
             profileImageView.setImageResource(R.drawable.ic_profile);
         }
@@ -63,8 +73,8 @@ public class ProfileActivity extends AppCompatActivity {
         LinearLayout countsRow = new LinearLayout(this);
         countsRow.setOrientation(LinearLayout.HORIZONTAL);
         countsRow.setLayoutParams(new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         countsRow.setGravity(android.view.Gravity.CENTER);
         countsRow.setPadding(0, 0, 0, 0);
         // Review Card
@@ -125,8 +135,8 @@ public class ProfileActivity extends AppCompatActivity {
         // Add a single button at the end of the profile page
         Button actionButton = new Button(this);
         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
         );
         btnParams.setMargins(0, 32, 0, 32);
         actionButton.setLayoutParams(btnParams);
@@ -166,18 +176,18 @@ public class ProfileActivity extends AppCompatActivity {
             DocumentReference userRef = db.collection("users").document(userId);
             // Get review count
             db.collection("review")
-                .whereEqualTo("user_id", userRef)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    reviewCountText.setText("" + queryDocumentSnapshots.size());
-                });
+                    .whereEqualTo("user_id", userRef)
+                    .get()
+                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                        reviewCountText.setText("" + queryDocumentSnapshots.size());
+                    });
             // Get favourite count
             db.collection("favourites")
-                .whereEqualTo("user_id", userRef)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    favCountText.setText("" + queryDocumentSnapshots.size());
-                });
+                    .whereEqualTo("user_id", userRef)
+                    .get()
+                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                        favCountText.setText("" + queryDocumentSnapshots.size());
+                    });
         }
 
         // Recent Reviews Section
@@ -196,89 +206,114 @@ public class ProfileActivity extends AppCompatActivity {
             String userId = user.getId();
             DocumentReference userRef = db.collection("users").document(userId);
             db.collection("review")
-                .whereEqualTo("user_id", userRef)
-                .orderBy("created_at", Query.Direction.DESCENDING)
-                .limit(2)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    android.util.Log.d("ProfileRecentReviews", "Recent reviews query result count: " + queryDocumentSnapshots.size());
-                    for (com.google.firebase.firestore.QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        android.util.Log.d("ProfileRecentReviews", "Review doc: " + doc.getData().toString());
-                    }
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        TextView noReviewsText = new TextView(this);
-                        noReviewsText.setText("No recent reviews found.");
-                        noReviewsText.setTextSize(15);
-                        noReviewsText.setPadding(0, 16, 0, 16);
-                        noReviewsText.setGravity(android.view.Gravity.CENTER);
-                        recentReviewsList.addView(noReviewsText);
-                    }
-                    for (com.google.firebase.firestore.QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        Review review = doc.toObject(Review.class);
-                        boolean show = doc.contains("show") && doc.get("show") != null ? Boolean.TRUE.equals(doc.getBoolean("show")) : true;
-                        String destinationName = "Unknown";
-                        review.getDestination_id().get().addOnSuccessListener(destDoc -> {
-                            String destName = destDoc.exists() ? destDoc.getString("name") : destinationName;
-                            // Card for review
-                            LinearLayout reviewCardLayout = new LinearLayout(this);
-                            reviewCardLayout.setOrientation(LinearLayout.VERTICAL);
-                            reviewCardLayout.setBackgroundResource(R.drawable.card_profile_border);
-                            reviewCardLayout.setPadding(32, 32, 32, 32);
-                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT);
-                            params.setMargins(0, 0, 0, 32);
-                            reviewCardLayout.setLayoutParams(params);
-                            reviewCardLayout.setElevation(6f);
+                    .whereEqualTo("user_id", userRef)
+                    .orderBy("created_at", Query.Direction.DESCENDING)
+                    .limit(2)
+                    .get()
+                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                        android.util.Log.d("ProfileRecentReviews", "Recent reviews query result count: " + queryDocumentSnapshots.size());
+                        for (com.google.firebase.firestore.QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            android.util.Log.d("ProfileRecentReviews", "Review doc: " + doc.getData().toString());
+                        }
+                        if (queryDocumentSnapshots.isEmpty()) {
+                            TextView noReviewsText = new TextView(this);
+                            noReviewsText.setText("No recent reviews found.");
+                            noReviewsText.setTextSize(15);
+                            noReviewsText.setPadding(0, 16, 0, 16);
+                            noReviewsText.setGravity(android.view.Gravity.CENTER);
+                            recentReviewsList.addView(noReviewsText);
+                        }
+                        for (com.google.firebase.firestore.QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            Review review = doc.toObject(Review.class);
+                            boolean show = doc.contains("show") && doc.get("show") != null ? Boolean.TRUE.equals(doc.getBoolean("show")) : true;
+                            String destinationName = "Unknown";
+                            review.getDestination_id().get().addOnSuccessListener(destDoc -> {
+                                String destName = destDoc.exists() ? destDoc.getString("name") : destinationName;
+                                // Card for review
+                                LinearLayout reviewCardLayout = new LinearLayout(this);
+                                reviewCardLayout.setOrientation(LinearLayout.VERTICAL);
+                                reviewCardLayout.setBackgroundResource(R.drawable.card_profile_border);
+                                reviewCardLayout.setPadding(32, 32, 32, 32);
+                                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                                        LinearLayout.LayoutParams.MATCH_PARENT,
+                                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                                params.setMargins(0, 0, 0, 32);
+                                reviewCardLayout.setLayoutParams(params);
+                                reviewCardLayout.setElevation(6f);
 
-                            // Header row (just the header text)
-                            LinearLayout headerRow = new LinearLayout(this);
-                            headerRow.setOrientation(LinearLayout.HORIZONTAL);
-                            headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-                            TextView headerText = new TextView(this);
-                            headerText.setText("Your review of " + destName);
-                            headerText.setTextSize(16);
-                            headerText.setTypeface(null, android.graphics.Typeface.BOLD);
-                            headerText.setPadding(0, 0, 0, 0);
-                            headerRow.addView(headerText);
-                            reviewCardLayout.addView(headerRow);
+                                // Header row (just the header text)
+                                LinearLayout headerRow = new LinearLayout(this);
+                                headerRow.setOrientation(LinearLayout.HORIZONTAL);
+                                headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                                TextView headerText = new TextView(this);
+                                headerText.setText("Your review of " + destName);
+                                headerText.setTextSize(16);
+                                headerText.setTypeface(null, android.graphics.Typeface.BOLD);
+                                headerText.setPadding(0, 0, 0, 0);
+                                headerRow.addView(headerText);
+                                reviewCardLayout.addView(headerRow);
 
-                            // Status chip row (chip below header)
-                            LinearLayout chipRow = new LinearLayout(this);
-                            chipRow.setOrientation(LinearLayout.HORIZONTAL);
-                            chipRow.setGravity(android.view.Gravity.START);
-                            com.google.android.material.chip.Chip statusChip = new com.google.android.material.chip.Chip(this);
-                            statusChip.setText(show ? "available" : "hidden by admin");
-                            statusChip.setTextColor(getResources().getColor(R.color.white, getTheme()));
-                            // Use built-in Android colors if custom colors are missing
-                            int chipColor = show ? android.graphics.Color.parseColor("#4CAF50") : android.graphics.Color.parseColor("#F44336");
-                            statusChip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(chipColor));
-                            statusChip.setTextSize(14);
-                            statusChip.setChipMinHeight(44);
-                            // Use setShapeAppearanceModel for rounded corners (recommended)
-                            com.google.android.material.shape.ShapeAppearanceModel shapeModel = statusChip.getShapeAppearanceModel().withCornerSize(18f);
-                            statusChip.setShapeAppearanceModel(shapeModel);
-                            statusChip.setPadding(24, 0, 24, 0);
-                            statusChip.setClickable(false);
-                            statusChip.setCheckable(false);
-                            chipRow.addView(statusChip);
-                            reviewCardLayout.addView(chipRow);
+                                // Status chip row (chip below header)
+                                LinearLayout chipRow = new LinearLayout(this);
+                                chipRow.setOrientation(LinearLayout.HORIZONTAL);
+                                chipRow.setGravity(android.view.Gravity.START);
+                                com.google.android.material.chip.Chip statusChip = new com.google.android.material.chip.Chip(this);
+                                statusChip.setText(show ? "Your review is available." : "Your review was hidden for guideline reasons.");
+                                statusChip.setTextColor(getResources().getColor(R.color.white, getTheme()));
+                                // Use built-in Android colors if custom colors are missing
+                                int chipColor = show ? android.graphics.Color.parseColor("#4CAF50") : android.graphics.Color.parseColor("#F44336");
+                                statusChip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(chipColor));
+                                statusChip.setTextSize(14);
+                                statusChip.setChipMinHeight(44);
+                                // Use setShapeAppearanceModel for rounded corners (recommended)
+                                com.google.android.material.shape.ShapeAppearanceModel shapeModel = statusChip.getShapeAppearanceModel().withCornerSize(18f);
+                                statusChip.setShapeAppearanceModel(shapeModel);
+                                statusChip.setPadding(24, 0, 24, 0);
+                                statusChip.setClickable(false);
+                                statusChip.setCheckable(false);
+                                chipRow.addView(statusChip);
+                                reviewCardLayout.addView(chipRow);
 
-                            // Clickable to show details
-                            reviewCardLayout.setOnClickListener(v -> {
-                                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-                                builder.setTitle("Your review of " + destName);
-                                builder.setMessage("Review: " + review.getComment() +
-                                        "\n\nRating: " + String.format("%.1f", review.getRating()) +
-                                        "\n\nStatus: " + (show ? "available" : "hidden by admin"));
-                                builder.setPositiveButton("OK", null);
-                                builder.show();
+                                // Clickable to show details
+                                reviewCardLayout.setOnClickListener(v -> {
+                                    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+                                    builder.setTitle("Your review of " + destName);
+                                    builder.setMessage("Review: " + review.getComment() +
+                                            "\n\nRating: " + String.format("%.1f", review.getRating()) +
+                                            "\n\nStatus: " + (show ? "available" : "hidden by admin"));
+                                    builder.setPositiveButton("OK", null);
+                                    builder.show();
+                                });
+                                recentReviewsList.addView(reviewCardLayout);
                             });
-                            recentReviewsList.addView(reviewCardLayout);
-                        });
-                    }
-                });
+                        }
+                    });
         }
+
+        // Show Go To Admin View button for admin users
+        com.google.android.material.button.MaterialButton toggleAdminBtn = findViewById(R.id.btnToggleAdminView);
+        if (user != null && "admin".equalsIgnoreCase(user.getUserType())) {
+            toggleAdminBtn.setVisibility(android.view.View.VISIBLE);
+            toggleAdminBtn.setText(isAdminView() ? "Go To User View" : "Go To Admin View");
+            toggleAdminBtn.setOnClickListener(v -> {
+                toggleAdminView();
+                toggleAdminBtn.setText(isAdminView() ? "Go To User View" : "Go To Admin View");
+            });
+        } else {
+            toggleAdminBtn.setVisibility(android.view.View.GONE);
+        }
+    }
+        // Helper methods for toggling admin view
+    private boolean isAdminView() {
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        return prefs.getBoolean("is_admin_view", true);
+    }
+    private void toggleAdminView() {
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        boolean current = prefs.getBoolean("is_admin_view", true);
+        prefs.edit().putBoolean("is_admin_view", !current).apply();
+        // Optionally, refresh UI or navigate as needed
+        recreate();
     }
 
     private void setupBottomNavigation() {

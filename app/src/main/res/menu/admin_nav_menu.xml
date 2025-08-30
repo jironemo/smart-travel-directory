@@ -17,7 +17,19 @@
         android:title="Add Destination"
         android:icon="@drawable/ic_add" />
     <item
-        android:id="@+id/nav_logout"
-        android:title="Logout"
-        android:icon="@android:drawable/ic_lock_power_off" />
+        android:id="@+id/nav_category_list"
+        android:title="Category List"
+        android:icon="@android:drawable/ic_menu_agenda" />
+    <item
+        android:id="@+id/nav_add_category"
+        android:title="Add Category"
+        android:icon="@drawable/ic_add" />
+    <item
+        android:id="@+id/nav_add_location"
+        android:title="Add Location"
+        android:icon="@drawable/ic_add_location" />
+    <item
+        android:id="@+id/nav_locations_list"
+        android:title="Locations List"
+        android:icon="@android:drawable/ic_menu_agenda" />
 </menu>

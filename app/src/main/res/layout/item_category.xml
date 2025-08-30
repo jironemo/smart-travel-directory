@@ -23,31 +23,15 @@
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView
-                android:id="@+id/tvDestinationName"
+                android:id="@+id/tvCategoryName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Destination Name"
+                android:text="Category Name"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#222222" />
             <TextView
-                android:id="@+id/tvDestinationCategory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Category"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp" />
-            <TextView
-                android:id="@+id/tvDestinationDivision"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Division"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp" />
-            <TextView
-                android:id="@+id/tvDestinationDescription"
+                android:id="@+id/tvCategoryDescription"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Description"
@@ -57,21 +41,20 @@
         </LinearLayout>
 
         <ImageButton
-            android:id="@+id/btnEditDestination"
+            android:id="@+id/btnEditCategory"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_edit"
             android:tint="#2196F3"
-            android:contentDescription="Edit Destination" />
+            android:contentDescription="Edit Category" />
         <ImageButton
-            android:id="@+id/btnDeleteDestination"
+            android:id="@+id/btnDeleteCategory"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_delete"
             android:tint="#F44336"
-            android:contentDescription="Delete Destination" />
+            android:contentDescription="Delete Category" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
-

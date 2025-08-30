@@ -2,6 +2,7 @@
 package com.smarttravel.myanmar;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -68,6 +69,10 @@ public class MainActivity extends AppCompatActivity {
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             Destination destination = document.toObject(Destination.class);
                             destination.setId(document.getId());
+                            // Log imageUrl size (imageUrl is an array)
+                            if (destination.getImageUrl() != null) {
+                                Log.d("MainActivity", "imageUrl size: " + destination.getImageUrl().size());
+                            }
                             destinations.add(destination);
                         }
                         filterDestinations();

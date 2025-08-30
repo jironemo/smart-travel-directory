@@ -35,6 +35,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
                     fragment = new ReviewsListFragment();
                 } else if (id == R.id.nav_add_destination) {
                     fragment = new AddDestinationFragment();
+                } else if (id == R.id.nav_category_list) {
+                    fragment = new CategoryListFragment();
+                } else if (id == R.id.nav_add_category) {
+                    fragment = new AddCategoryFragment();
+                } else if (id == R.id.nav_add_location) {
+                    fragment = new AddLocationFragment();
+                } else if (id == R.id.nav_locations_list) {
+                    fragment = new LocationsListFragment();
                 }
                 if (fragment != null) {
                     getSupportFragmentManager().beginTransaction()

@@ -34,6 +34,7 @@ public class SearchActivity extends AppCompatActivity {
 
     private EditText searchEditText;
     private Spinner divisionSpinner;
+    private Spinner locationSpinner;
     private ChipGroup categoryChipGroup;
     private TextView noResultsTextView;
     private androidx.swiperefreshlayout.widget.SwipeRefreshLayout swipeRefreshLayout;
@@ -41,6 +42,7 @@ public class SearchActivity extends AppCompatActivity {
     private String selectedLocation = "";
     private String selectedCategory = "";
     private String searchQuery = "";
+    private String selectedDivision = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +75,7 @@ public class SearchActivity extends AppCompatActivity {
             return false;
         });
         divisionSpinner = findViewById(R.id.divisionSpinner);
+        locationSpinner = findViewById(R.id.locationSpinner);
         categoryChipGroup = findViewById(R.id.categoryChipGroup);
         noResultsTextView = findViewById(R.id.noResultsTextView);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
@@ -103,13 +106,13 @@ public class SearchActivity extends AppCompatActivity {
 
     private void setupFilters() {
         List<String> divisions = new ArrayList<>();
-        divisions.add("All Locations");
+        divisions.add("All Divisions");
         db.collection("destinations").get()
             .addOnSuccessListener(snaps -> {
                 for (QueryDocumentSnapshot document : snaps) {
-                    String location = document.getString("location");
-                    if (location != null && !divisions.contains(location)) {
-                        divisions.add(location);
+                    String division = document.getString("division");
+                    if (division != null && !divisions.contains(division)) {
+                        divisions.add(division);
                     }
                 }
                 ArrayAdapter<String> divisionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, divisions);
@@ -117,11 +120,49 @@ public class SearchActivity extends AppCompatActivity {
                 divisionSpinner.setAdapter(divisionAdapter);
             })
             .addOnFailureListener(e -> {
-                android.widget.Toast.makeText(this, "Failed to load locations.", android.widget.Toast.LENGTH_LONG).show();
-                android.util.Log.e("SearchActivity", "Error fetching locations", e);
+                android.widget.Toast.makeText(this, "Failed to load divisions.", android.widget.Toast.LENGTH_LONG).show();
+                android.util.Log.e("SearchActivity", "Error fetching divisions", e);
             });
 
+        List<String> locations = new ArrayList<>();
+        locations.add("All Locations");
+        ArrayAdapter<String> locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, locations);
+        locationAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        locationSpinner.setAdapter(locationAdapter);
+
         divisionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedDivision = position == 0 ? "" : (String) parent.getItemAtPosition(position);
+                // Update location spinner based on selected division
+                locations.clear();
+                locations.add("All Locations");
+                if (selectedDivision.isEmpty() || selectedDivision.equals("All Divisions")) {
+                    db.collection("locations").get().addOnSuccessListener(queryDocumentSnapshots -> {
+                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            String locationName = doc.getString("name");
+                            if (locationName != null && !locations.contains(locationName)) {
+                                locations.add(locationName);
+                            }
+                        }
+                        locationAdapter.notifyDataSetChanged();
+                    });
+                } else {
+                    db.collection("locations").whereEqualTo("division", selectedDivision).get().addOnSuccessListener(queryDocumentSnapshots -> {
+                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            String locationName = doc.getString("name");
+                            if (locationName != null && !locations.contains(locationName)) {
+                                locations.add(locationName);
+                            }
+                        }
+                        locationAdapter.notifyDataSetChanged();
+                    });
+                }
+                filterDestinations();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        locationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 selectedLocation = position == 0 ? "" : (String) parent.getItemAtPosition(position);
                 filterDestinations();
@@ -130,18 +171,24 @@ public class SearchActivity extends AppCompatActivity {
         });
 
         categoryChipGroup.setSingleSelection(true);
-        String[] categories = getResources().getStringArray(R.array.destination_categories);
-        for (String category : categories) {
-            Chip chip = new Chip(this);
-            chip.setText(category);
-            chip.setCheckable(true);
-            chip.setOnClickListener(v -> {
-                Chip clicked = (Chip) v;
-                selectedCategory = clicked.isChecked() ? clicked.getText().toString() : "";
-                filterDestinations();
-            });
-            categoryChipGroup.addView(chip);
-        }
+        db.collection("category").get().addOnSuccessListener(queryDocumentSnapshots -> {
+            categoryChipGroup.removeAllViews();
+            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                Category cat = doc.toObject(Category.class);
+                Chip chip = new Chip(this);
+                chip.setText(cat.getName());
+                chip.setCheckable(true);
+                chip.setOnClickListener(v -> {
+                    Chip clicked = (Chip) v;
+                    selectedCategory = clicked.isChecked() ? clicked.getText().toString() : "";
+                    filterDestinations();
+                });
+                categoryChipGroup.addView(chip);
+            }
+        }).addOnFailureListener(e -> {
+            android.widget.Toast.makeText(this, "Failed to load categories.", android.widget.Toast.LENGTH_LONG).show();
+            android.util.Log.e("SearchActivity", "Error fetching categories", e);
+        });
     }
 
     private void loadDestinations() {
@@ -170,9 +217,10 @@ public class SearchActivity extends AppCompatActivity {
             boolean matchesSearch = searchQuery.isEmpty() ||
                     d.getName().toLowerCase().contains(searchQuery) ||
                     d.getDescription().toLowerCase().contains(searchQuery);
-            boolean matchesLocation = selectedLocation.isEmpty() || d.getLocation().equals(selectedLocation);
+            boolean matchesDivision = selectedDivision.isEmpty() || selectedDivision.equals("All Divisions") || d.getDivision().equals(selectedDivision);
+            boolean matchesLocation = selectedLocation.isEmpty() || selectedLocation.equals("All Locations") || d.getLocationName().equals(selectedLocation);
             boolean matchesCategory = selectedCategory.isEmpty() || d.getCategory().equals(selectedCategory);
-            if (matchesSearch && matchesLocation && matchesCategory) {
+            if (matchesSearch && matchesDivision && matchesLocation && matchesCategory) {
                 filteredDestinations.add(d);
             }
         }

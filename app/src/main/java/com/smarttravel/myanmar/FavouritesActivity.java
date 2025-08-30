@@ -93,7 +93,7 @@ public class FavouritesActivity extends AppCompatActivity {
             String lower = query.toLowerCase();
             for (Destination d : favouriteDestinations) {
                 if (d.getName().toLowerCase().contains(lower) ||
-                    (d.getLocation() != null && d.getLocation().toLowerCase().contains(lower)) ||
+                    (d.getLocationName() != null && d.getLocationName().toLowerCase().contains(lower)) ||
                     (d.getCategory() != null && d.getCategory().toLowerCase().contains(lower))) {
                     filteredDestinations.add(d);
                 }

@@ -1,5 +1,6 @@
 package com.smarttravel.myanmar;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,8 +24,28 @@ public class DestinationsListFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.destinationsListRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         List<Destination> destinations = new ArrayList<>();
-        AdminDestinationAdapter adapter = new AdminDestinationAdapter(getContext(), destinations);
-        recyclerView.setAdapter(adapter);
+        final AdminDestinationAdapter[] adapter = new AdminDestinationAdapter[1];
+        adapter[0] = new AdminDestinationAdapter(
+            getContext(),
+            destinations,
+            (destination, position) -> {
+                // Delete logic
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                db.collection("destinations").document(destination.getId())
+                    .delete()
+                    .addOnSuccessListener(aVoid -> {
+                        destinations.remove(position);
+                        adapter[0].notifyItemRemoved(position);
+                    });
+            },
+            destination -> {
+                // Edit logic: launch EditDestinationActivity
+                Intent intent = new Intent(getContext(), EditDestinationActivity.class);
+                intent.putExtra("destination_id", destination.getId());
+                startActivity(intent);
+            }
+        );
+        recyclerView.setAdapter(adapter[0]);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("destinations")
                 .orderBy("name")
@@ -36,7 +57,7 @@ public class DestinationsListFragment extends Fragment {
                         destination.setId(document.getId());
                         destinations.add(destination);
                     }
-                    adapter.notifyDataSetChanged();
+                    adapter[0].notifyDataSetChanged();
                 })
                 .addOnFailureListener(e -> {
                     android.widget.Toast.makeText(getContext(), "Failed to load destinations.", android.widget.Toast.LENGTH_LONG).show();
@@ -54,7 +75,7 @@ public class DestinationsListFragment extends Fragment {
                         destination.setId(document.getId());
                         destinations.add(destination);
                     }
-                    adapter.notifyDataSetChanged();
+                    adapter[0].notifyDataSetChanged();
                     swipeRefreshLayout.setRefreshing(false);
                 })
                 .addOnFailureListener(e -> {
@@ -73,12 +94,12 @@ public class DestinationsListFragment extends Fragment {
                 List<Destination> filtered = new ArrayList<>();
                 for (Destination d : destinations) {
                     if (d.getName().toLowerCase().contains(query) ||
-                        (d.getLocation() != null && d.getLocation().toLowerCase().contains(query)) ||
+                        (d.getLocationName() != null && d.getLocationName().toLowerCase().contains(query)) ||
                         (d.getCategory() != null && d.getCategory().toLowerCase().contains(query))) {
                         filtered.add(d);
                     }
                 }
-                adapter.updateList(filtered);
+                adapter[0].updateList(filtered);
             }
             @Override
             public void afterTextChanged(android.text.Editable s) {}

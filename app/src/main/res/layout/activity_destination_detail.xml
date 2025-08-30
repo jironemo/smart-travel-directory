@@ -20,14 +20,16 @@
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             android:elevation="4dp" />
 
-        <!-- Full-width image -->
-        <ImageView
-            android:id="@+id/detailImageView"
+        <!-- Carousel for up to 3 images -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/detailImagesRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="240dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="@string/destination_image"
-            android:src="@drawable/placeholder_image" />
+            android:orientation="horizontal"
+            android:padding="0dp"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:layout_marginBottom="8dp" />
 
         <!-- Card for text content -->
         <com.google.android.material.card.MaterialCardView
@@ -151,6 +153,72 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:paddingBottom="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Address"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="0dp" />
+                <TextView
+                    android:id="@+id/detailAddressTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Address goes here"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Contact"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="0dp" />
+                <TextView
+                    android:id="@+id/detailContactTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Contact goes here"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Additional Information"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="0dp" />
+                <TextView
+                    android:id="@+id/detailAdditionalInfoTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Additional information goes here"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginBottom="8dp" />
 
 
             </LinearLayout>

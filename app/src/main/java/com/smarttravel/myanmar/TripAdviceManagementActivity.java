@@ -98,13 +98,6 @@ public class TripAdviceManagementActivity extends AppCompatActivity {
                 // Fix: Use correct resource id for admin dashboard navigation
                 startActivity(new android.content.Intent(this, AdminDashboardActivity.class));
                 return true;
-            } else if (id == R.id.nav_logout) {
-                // Logout logic: clear session and go to login
-                android.content.Intent intent = new android.content.Intent(this, LoginActivity.class);
-                intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-                return true;
             }
             drawerLayout.closeDrawers();
             return false;
