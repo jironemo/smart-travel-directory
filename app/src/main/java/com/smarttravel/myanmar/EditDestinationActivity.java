@@ -6,10 +6,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.util.Base64;
+import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -29,15 +32,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EditDestinationActivity extends AppCompatActivity {
+    private static final int MAX_IMAGES = 3;
+    private static final String IMGBB_API_KEY = "f6fe35548b59cf2a2fbef9d576f1c5d0";
     private EditText nameEditText, descriptionEditText, addressEditText, contactEditText, additionalInfoEditText;
     private Button saveButton;
     private String destinationId;
     private FirebaseFirestore db;
-    private List<String> base64Images = new ArrayList<>();
     private RecyclerView imagesRecyclerView;
     private ImagesPreviewAdapter imagesPreviewAdapter;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private Spinner categorySpinner, divisionSpinner, locationSpinner;
+    // Holds both URLs (String) and new images (Uri)
+    private List<Object> previewImages = new ArrayList<>();
+    private ProgressBar progressBarSaving;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,22 +62,58 @@ public class EditDestinationActivity extends AppCompatActivity {
         additionalInfoEditText = findViewById(R.id.editDestinationAdditionalInfoEditText);
         saveButton = findViewById(R.id.btnSaveDestination);
         imagesRecyclerView = findViewById(R.id.editDestinationImagesRecyclerView);
-        imagesPreviewAdapter = new ImagesPreviewAdapter(base64Images, this::selectImage);
+        progressBarSaving = findViewById(R.id.progressBarSaving);
+        progressBarSaving.setVisibility(View.GONE);
+        // Convert previewImages to List<String> or List<Uri> for the adapter
+        imagesPreviewAdapter = new ImagesPreviewAdapter(previewImages, position -> {
+            if (position == previewImages.size() && previewImages.size() < MAX_IMAGES) {
+                selectImages();
+            } else if (position < previewImages.size()) {
+                previewImages.remove(position);
+                imagesPreviewAdapter.notifyDataSetChanged();
+            }
+        });
         imagesRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         imagesRecyclerView.setAdapter(imagesPreviewAdapter);
-        List<Category> categoryList = new ArrayList<>();
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    List<Uri> uris = new ArrayList<>();
+                    if (result.getData().getClipData() != null) {
+                        int count = result.getData().getClipData().getItemCount();
+                        for (int i = 0; i < count && previewImages.size() + uris.size() < MAX_IMAGES; i++) {
+                            uris.add(result.getData().getClipData().getItemAt(i).getUri());
+                        }
+                    } else if (result.getData().getData() != null) {
+                        if (previewImages.size() < MAX_IMAGES) {
+                            uris.add(result.getData().getData());
+                        }
+                    }
+                    previewImages.addAll(uris);
+                    imagesPreviewAdapter.notifyDataSetChanged();
+                }
+            }
+        );
+        setupSpinners();
+        loadDestination();
+        saveButton.setOnClickListener(v -> {
+            progressBarSaving.setVisibility(View.VISIBLE);
+            saveButton.setEnabled(false);
+            saveDestination();
+        });
+    }
+
+    private void setupSpinners() {
         List<String> categoryNames = new ArrayList<>();
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categoryNames);
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         categorySpinner.setAdapter(categoryAdapter);
         db.collection("category").get().addOnSuccessListener(queryDocumentSnapshots -> {
-            categoryList.clear();
             categoryNames.clear();
             for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                Category cat = doc.toObject(Category.class);
-                cat.setId(doc.getId());
-                categoryList.add(cat);
-                categoryNames.add(cat.getName());
+                String name = doc.getString("name");
+                if (name != null) categoryNames.add(name);
             }
             categoryAdapter.notifyDataSetChanged();
         });
@@ -98,37 +141,10 @@ public class EditDestinationActivity extends AppCompatActivity {
             }
             locationAdapter.notifyDataSetChanged();
         });
-        loadDestination();
-        saveButton.setOnClickListener(v -> saveDestination());
-        imagePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Uri imageUri = result.getData().getData();
-                    try {
-                        InputStream inputStream = getContentResolver().openInputStream(imageUri);
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-                        byte[] imageBytes = baos.toByteArray();
-                        String base64 = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
-                        if (base64Images.size() < 3) {
-                            base64Images.add(base64);
-                            imagesPreviewAdapter.notifyDataSetChanged();
-                        } else {
-                            Toast.makeText(this, "Maximum 3 images allowed", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (Exception e) {
-                        Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-        );
         divisionSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
                 String selectedDivision = divisionSpinner.getSelectedItem() != null ? divisionSpinner.getSelectedItem().toString() : "";
-                // Query locations for the selected division
                 db.collection("locations").whereEqualTo("division", selectedDivision).get().addOnSuccessListener(queryDocumentSnapshots -> {
                     List<String> filteredLocationNames = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
@@ -158,22 +174,21 @@ public class EditDestinationActivity extends AppCompatActivity {
                     contactEditText.setText(doc.getString("contact"));
                     additionalInfoEditText.setText(doc.getString("additionalInformation"));
                     List<String> images = (List<String>) doc.get("imageUrl");
-                    base64Images.clear();
-                    if (images != null) base64Images.addAll(images);
+                    previewImages.clear();
+                    if (images != null) {
+                        previewImages.addAll(images); // Add URLs for preview
+                    }
                     imagesPreviewAdapter.notifyDataSetChanged();
                 }
             });
     }
 
-    private void selectImage(int position) {
-        if (base64Images.size() < 3) {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("image/*");
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            imagePickerLauncher.launch(Intent.createChooser(intent, "Select Picture"));
-        } else {
-            Toast.makeText(this, "Maximum 3 images allowed", Toast.LENGTH_SHORT).show();
-        }
+    private void selectImages() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        imagePickerLauncher.launch(Intent.createChooser(intent, "Select up to 3 images"));
     }
 
     private void saveDestination() {
@@ -189,9 +204,82 @@ public class EditDestinationActivity extends AppCompatActivity {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (previewImages.isEmpty()) {
+            Toast.makeText(this, "Please select and upload at least one image", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        saveButton.setEnabled(false);
+        List<String> uploadedUrls = new ArrayList<>();
+        final int[] uploadCount = {0};
+        List<Uri> urisToUpload = new ArrayList<>();
+        List<String> urlsToKeep = new ArrayList<>();
+        for (Object obj : previewImages) {
+            if (obj instanceof Uri) {
+                urisToUpload.add((Uri) obj);
+            } else if (obj instanceof String) {
+                urlsToKeep.add((String) obj);
+            }
+        }
+        if (urisToUpload.isEmpty()) {
+            saveToFirestore(urlsToKeep);
+            return;
+        }
+        for (Uri uri : urisToUpload) {
+            try {
+                InputStream inputStream = getContentResolver().openInputStream(uri);
+                if (inputStream == null) throw new Exception("Cannot open image stream");
+                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                if (bitmap == null) throw new Exception("Cannot decode image");
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos); // Always compress as JPEG
+                byte[] imageBytes = baos.toByteArray();
+                String base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
+                ImgbbUploader.uploadImage(base64, IMGBB_API_KEY, new ImgbbUploader.UploadCallback() {
+                    @Override
+                    public void onSuccess(String imageUrl) {
+                        uploadedUrls.add(imageUrl);
+                        uploadCount[0]++;
+                        if (uploadCount[0] == urisToUpload.size()) {
+                            List<String> allUrls = new ArrayList<>(urlsToKeep);
+                            allUrls.addAll(uploadedUrls);
+                            saveToFirestore(allUrls);
+                        }
+                    }
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e("ImageUpload", e.getMessage(), e);
+                        Toast.makeText(EditDestinationActivity.this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        uploadCount[0]++;
+                        if (uploadCount[0] == urisToUpload.size()) {
+                            List<String> allUrls = new ArrayList<>(urlsToKeep);
+                            allUrls.addAll(uploadedUrls);
+                            saveToFirestore(allUrls);
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                Toast.makeText(this, "Failed to process image: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                uploadCount[0]++;
+                if (uploadCount[0] == urisToUpload.size()) {
+                    List<String> allUrls = new ArrayList<>(urlsToKeep);
+                    allUrls.addAll(uploadedUrls);
+                    saveToFirestore(allUrls);
+                }
+            }
+        }
+    }
+
+    private void saveToFirestore(List<String> imageUrls) {
+        String name = nameEditText.getText().toString().trim();
+        String category = categorySpinner.getSelectedItem() != null ? categorySpinner.getSelectedItem().toString() : "";
+        String division = divisionSpinner.getSelectedItem() != null ? divisionSpinner.getSelectedItem().toString() : "";
+        String locationName = locationSpinner.getSelectedItem() != null ? locationSpinner.getSelectedItem().toString() : "";
+        String description = descriptionEditText.getText().toString().trim();
+        String address = addressEditText.getText().toString().trim();
+        String contact = contactEditText.getText().toString().trim();
+        String additionalInfo = additionalInfoEditText.getText().toString().trim();
         db.collection("destinations").document(destinationId)
             .update("name", name,
-
                     "category", category,
                     "division", division,
                     "locationName", locationName,
@@ -199,15 +287,22 @@ public class EditDestinationActivity extends AppCompatActivity {
                     "address", address,
                     "contact", contact,
                     "additionalInformation", additionalInfo,
-                    "imageUrl", base64Images)
+                    "imageUrl", imageUrls)
             .addOnSuccessListener(aVoid -> {
-                Toast.makeText(this, "Destination updated!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Destination updated successfully!", Toast.LENGTH_SHORT).show();
+                progressBarSaving.setVisibility(View.GONE);
+                saveButton.setEnabled(true);
                 Intent intent = new Intent(this, AdminDashboardActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
                 finish();
             })
-            .addOnFailureListener(e -> Toast.makeText(this, "Failed to update destination", Toast.LENGTH_SHORT).show());
+            .addOnFailureListener(e -> {
+                Toast.makeText(this, "Failed to update destination", Toast.LENGTH_SHORT).show();
+                progressBarSaving.setVisibility(View.GONE);
+                saveButton.setEnabled(true);
+            });
+        saveButton.setEnabled(true);
     }
 
     private int getCategoryIndex(String category) {

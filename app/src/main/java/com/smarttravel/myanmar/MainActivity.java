@@ -3,7 +3,6 @@ package com.smarttravel.myanmar;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,13 +20,18 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private FirebaseFirestore db;
-    private RecyclerView recyclerView;
-    private DestinationAdapter adapter;
-    private List<Destination> destinations;
-    private List<Destination> filteredDestinations;
+    private RecyclerView mainRecyclerView;
+    private MainDestinationsAdapter mainAdapter;
+    private List<Destination> allDestinations = new ArrayList<>();
+    private List<Destination> popularDestinations = new ArrayList<>();
 
     private TextView noResultsTextView;
     private androidx.swiperefreshlayout.widget.SwipeRefreshLayout swipeRefreshLayout;
+
+    private static final int PAGE_SIZE = 3;
+    private boolean isLoading = false;
+    private boolean isLastPage = false;
+    private QueryDocumentSnapshot lastVisible = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,12 +41,13 @@ public class MainActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         initViews();
         setupRecyclerView();
+        loadPopularDestinations();
         loadDestinations();
         setupBottomNavigation();
     }
 
     private void initViews() {
-        recyclerView = findViewById(R.id.recyclerView);
+        mainRecyclerView = findViewById(R.id.mainRecyclerView);
         noResultsTextView = findViewById(R.id.noResultsTextView);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         swipeRefreshLayout.setOnRefreshListener(() -> {
@@ -52,43 +57,86 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        destinations = new ArrayList<>();
-        filteredDestinations = new ArrayList<>();
-        adapter = new DestinationAdapter(this, filteredDestinations);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
+        mainAdapter = new MainDestinationsAdapter(this, popularDestinations, allDestinations);
+        mainRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mainRecyclerView.setAdapter(mainAdapter);
+        mainRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int totalItemCount = layoutManager.getItemCount();
+                int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
+                if (!isLoading && !isLastPage && lastVisibleItem >= totalItemCount - 2) {
+                    loadDestinationsPaginated();
+                }
+            }
+        });
+    }
+
+    private void loadDestinationsPaginated() {
+        isLoading = true;
+        com.google.firebase.firestore.Query query = db.collection("destinations").orderBy("name").limit(PAGE_SIZE);
+        if (lastVisible != null) {
+            query = query.startAfter(lastVisible);
+        }
+        query.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                List<Destination> newDestinations = new ArrayList<>();
+                List<QueryDocumentSnapshot> docs = new ArrayList<>();
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    Destination destination = document.toObject(Destination.class);
+                    destination.setId(document.getId());
+                    newDestinations.add(destination);
+                    docs.add(document);
+                }
+                if (!docs.isEmpty()) {
+                    lastVisible = docs.get(docs.size() - 1);
+                }
+                if (newDestinations.size() < PAGE_SIZE) {
+                    isLastPage = true;
+                }
+                allDestinations.addAll(newDestinations);
+                mainAdapter.setAllDestinations(allDestinations);
+            } else {
+                Toast.makeText(this, "Error loading destinations", Toast.LENGTH_SHORT).show();
+            }
+            isLoading = false;
+        });
     }
 
     private void loadDestinations() {
-        db.collection("destinations")
-                .orderBy("name")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        destinations.clear();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Destination destination = document.toObject(Destination.class);
-                            destination.setId(document.getId());
-                            // Log imageUrl size (imageUrl is an array)
-                            if (destination.getImageUrl() != null) {
-                                Log.d("MainActivity", "imageUrl size: " + destination.getImageUrl().size());
-                            }
-                            destinations.add(destination);
-                        }
-                        filterDestinations();
-                    } else {
-                        Toast.makeText(this, "Error loading destinations", Toast.LENGTH_SHORT).show();
-                        if (task.getException() != null) task.getException().printStackTrace();
-                    }
-                });
+        // Reset for refresh
+        allDestinations.clear();
+        lastVisible = null;
+        isLastPage = false;
+        loadDestinationsPaginated();
     }
 
-    private void filterDestinations() {
-        // No search/filters on Home: show all
-        filteredDestinations.clear();
-        filteredDestinations.addAll(destinations);
-        adapter.notifyDataSetChanged();
-        noResultsTextView.setVisibility(filteredDestinations.isEmpty() ? View.VISIBLE : View.GONE);
+    private void loadPopularDestinations() {
+        db.collection("destinations")
+            .orderBy("rating", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(3)
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+                popularDestinations.clear();
+                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                    Destination d = doc.toObject(Destination.class);
+                    d.setId(doc.getId());
+                    d.setPopular(true);
+                    // Log imageUrl for debugging
+                    if (d.getImageUrl() != null && !d.getImageUrl().isEmpty()) {
+                        Log.d("MainActivity", "Popular destination: " + d.getName() + ", imageUrl[0]: " + d.getImageUrl().get(0));
+                    } else {
+                        Log.w("MainActivity", "Popular destination: " + d.getName() + " has no imageUrl!");
+                    }
+                    popularDestinations.add(d);
+                }
+                mainAdapter.setPopularDestinations(popularDestinations);
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(this, "Failed to load popular destinations.", Toast.LENGTH_SHORT).show();
+            });
     }
 
     private void setupBottomNavigation() {
@@ -110,5 +158,29 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
         bottomNav.getMenu().findItem(R.id.nav_home).setChecked(true);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        boolean fromAdmin = getIntent().getBooleanExtra("fromAdmin", false);
+        if (!fromAdmin && User.getCurrentUser() != null && User.getCurrentUser().getUser_type() != null && User.getCurrentUser().getUser_type().equalsIgnoreCase("admin")) {
+            Intent intent = new Intent(this, AdminDashboardActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        boolean fromAdmin = getIntent().getBooleanExtra("fromAdmin", false);
+        if (!fromAdmin && User.getCurrentUser() != null && User.getCurrentUser().getUser_type() != null && User.getCurrentUser().getUser_type().equalsIgnoreCase("admin")) {
+            Intent intent = new Intent(MainActivity.this, AdminDashboardActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        }
     }
 }

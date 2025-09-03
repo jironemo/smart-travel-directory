@@ -125,5 +125,13 @@
             android:layout_height="wrap_content"
             android:text="Save Changes"
             android:layout_marginTop="16dp" />
+
+        <ProgressBar
+            android:id="@+id/progressBarSaving"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_marginTop="16dp" />
     </LinearLayout>
 </ScrollView>

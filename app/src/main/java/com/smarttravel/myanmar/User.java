@@ -9,7 +9,7 @@ public class User {
     private String username;
     private String profile_picture;
     private Timestamp created_at;
-    private String userType; // Added userType property
+    private String user_type; // Added userType property
 
     // Static field for current user
     private static User currentUser;
@@ -38,8 +38,8 @@ public class User {
     public Timestamp getCreated_at() { return created_at; }
     public void setCreated_at(Timestamp created_at) { this.created_at = created_at; }
 
-    public String getUserType() { return userType; } // Getter for userType
-    public void setUserType(String userType) { this.userType = userType; } // Setter for userType
+    public String getUser_type() { return user_type; } // Getter for userType
+    public void setUser_type(String user_type) { this.user_type = user_type; } // Setter for userType
 
     public String getCreatedAtString() {
         return created_at != null ? created_at.toDate().toString() : "";

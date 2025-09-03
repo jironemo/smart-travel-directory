@@ -53,7 +53,6 @@ public class EditCategoryFragment extends Fragment {
         Button saveButton = view.findViewById(R.id.btnSaveCategory);
         nameEditText.setText(initialName);
         descriptionEditText.setText(initialDescription);
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
         saveButton.setOnClickListener(v -> {
             String name = nameEditText.getText().toString().trim();
             String description = descriptionEditText.getText().toString().trim();
@@ -61,9 +60,18 @@ public class EditCategoryFragment extends Fragment {
                 Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
                 return;
             }
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
             db.collection("category").document(categoryId)
                 .update("name", name, "description", description)
-                .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Category updated!", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Category updated successfully!", Toast.LENGTH_SHORT).show();
+                    // Navigate back to Category List
+                    if (getParentFragmentManager() != null) {
+                        getParentFragmentManager().beginTransaction()
+                            .replace(R.id.admin_content_frame, new CategoryListFragment())
+                            .commit();
+                    }
+                })
                 .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to update category", Toast.LENGTH_SHORT).show());
         });
         return view;

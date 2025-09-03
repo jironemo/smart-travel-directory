@@ -9,7 +9,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
@@ -73,7 +72,7 @@ public class LoginActivity extends AppCompatActivity {
                                 user = doc.toObject(User.class);
                                 String userType = doc.getString("user_type");
                                 user.setId(doc.getId());
-                                user.setUserType(userType); // Set userType from firebase property
+                                user.setUser_type(userType); // Set userType from firebase property
                                 User.setCurrentUser(user);
                                 // Save user id for persistent login
                                 SharedPreferences.Editor editor = getSharedPreferences("user_prefs", MODE_PRIVATE).edit();

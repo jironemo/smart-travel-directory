@@ -43,6 +43,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
                     fragment = new AddLocationFragment();
                 } else if (id == R.id.nav_locations_list) {
                     fragment = new LocationsListFragment();
+                } else if (id == R.id.nav_user_view) {
+                    drawerLayout.closeDrawers();
+                    android.content.Intent intent = new android.content.Intent(AdminDashboardActivity.this, MainActivity.class);
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    intent.putExtra("fromAdmin", true);
+                    startActivity(intent);
+                    finish();
+                    return true;
                 }
                 if (fragment != null) {
                     getSupportFragmentManager().beginTransaction()

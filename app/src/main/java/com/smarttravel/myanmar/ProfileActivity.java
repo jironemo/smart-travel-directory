@@ -2,26 +2,34 @@ package com.smarttravel.myanmar;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.DocumentReference;
 
 public class ProfileActivity extends AppCompatActivity {
+    private static final int PICK_IMAGE_REQUEST = 1;
+    private ImageView profileImageView;
+    private User user;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
         setupBottomNavigation();
+        user = User.getCurrentUser();
         // Get user info from User.currentUser
-        User user = User.getCurrentUser();
         String email = user != null ? user.getEmail() : null;
         String username = user != null ? user.getUsername() : null;
         String profilePicture = user != null ? user.getProfile_picture() : null;
@@ -29,7 +37,7 @@ public class ProfileActivity extends AppCompatActivity {
         // Set user info to views
         TextView nameTextView = findViewById(R.id.profileNameTextView);
         TextView emailTextView = findViewById(R.id.profileEmailTextView);
-        ImageView profileImageView = findViewById(R.id.profileImageView);
+        profileImageView = findViewById(R.id.profileImageView);
         TextView createdAtTextView = findViewById(R.id.profileCreatedAtTextView);
         nameTextView.setText(username != null && !username.isEmpty() ? username : "Guest User");
         nameTextView.setPadding(0, 16, 0, 16);
@@ -45,6 +53,7 @@ public class ProfileActivity extends AppCompatActivity {
             createdAtTextView.setText("Member since");
         }
         createdAtTextView.setPadding(0, 8, 0, 16);
+        // Load profile image from base64 or URL
         if (profilePicture != null && !profilePicture.isEmpty()) {
             if (profilePicture.startsWith("/9j") || profilePicture.startsWith("iVBOR")) { // base64 JPEG/PNG
                 try {
@@ -292,29 +301,80 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Show Go To Admin View button for admin users
         com.google.android.material.button.MaterialButton toggleAdminBtn = findViewById(R.id.btnToggleAdminView);
-        if (user != null && "admin".equalsIgnoreCase(user.getUserType())) {
+        if (user != null && "admin".equalsIgnoreCase(user.getUser_type())) {
             toggleAdminBtn.setVisibility(android.view.View.VISIBLE);
-            toggleAdminBtn.setText(isAdminView() ? "Go To User View" : "Go To Admin View");
+            toggleAdminBtn.setText("Go To Admin View");
             toggleAdminBtn.setOnClickListener(v -> {
-                toggleAdminView();
-                toggleAdminBtn.setText(isAdminView() ? "Go To User View" : "Go To Admin View");
+                Intent intent = new Intent(ProfileActivity.this, AdminDashboardActivity.class);
+                startActivity(intent);
+                finish();
             });
         } else {
             toggleAdminBtn.setVisibility(android.view.View.GONE);
         }
+
+        ImageButton btnEditProfileImage = findViewById(R.id.btnEditProfileImage);
+        if (user == null || (user.getUsername() == null || user.getUsername().isEmpty() || "Guest User".equals(user.getUsername()))) {
+            btnEditProfileImage.setVisibility(View.GONE);
+        } else {
+            btnEditProfileImage.setVisibility(View.VISIBLE);
+            btnEditProfileImage.setOnClickListener(v -> {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(Intent.createChooser(intent, "Select Profile Picture"), 101);
+            });
+        }
+        // Make image oval
+        profileImageView.setClipToOutline(true);
+        // Show admin button if user is admin
+        MaterialButton btnToggleAdminView = findViewById(R.id.btnToggleAdminView);
+        if (user != null && user.getUser_type() != null && user.getUser_type().equalsIgnoreCase("admin")) {
+            btnToggleAdminView.setVisibility(View.VISIBLE);
+            btnToggleAdminView.setText("Go To Admin View");
+            btnToggleAdminView.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, AdminDashboardActivity.class);
+                startActivity(intent);
+                finish();
+            });
+        } else {
+            btnToggleAdminView.setVisibility(View.GONE);
+        }
     }
-        // Helper methods for toggling admin view
-    private boolean isAdminView() {
-        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
-        return prefs.getBoolean("is_admin_view", true);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if ((requestCode == PICK_IMAGE_REQUEST || requestCode == 101) && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            Uri imageUri = data.getData();
+            try {
+                android.graphics.Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                profileImageView.setImageBitmap(bitmap);
+                // Encode bitmap to base64
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, baos);
+                byte[] imageBytes = baos.toByteArray();
+                String base64Image = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+                // Save to Firestore
+                if (user != null && user.getId() != null) {
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    DocumentReference userRef = db.collection("users").document(user.getId());
+                    userRef.update("profile_picture", base64Image)
+                        .addOnSuccessListener(aVoid -> {
+                            user.setProfile_picture(base64Image);
+                            android.widget.Toast.makeText(ProfileActivity.this, "Profile image updated!", android.widget.Toast.LENGTH_SHORT).show();
+                        })
+                        .addOnFailureListener(e -> {
+                            android.widget.Toast.makeText(ProfileActivity.this, "Failed to update profile image.", android.widget.Toast.LENGTH_SHORT).show();
+                        });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                android.widget.Toast.makeText(ProfileActivity.this, "Error processing image.", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
     }
-    private void toggleAdminView() {
-        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
-        boolean current = prefs.getBoolean("is_admin_view", true);
-        prefs.edit().putBoolean("is_admin_view", !current).apply();
-        // Optionally, refresh UI or navigate as needed
-        recreate();
-    }
+    // Helper methods for toggling admin view
+
 
     private void setupBottomNavigation() {
         BottomNavigationView bottomNav = findViewById(R.id.bottomNavigationView);

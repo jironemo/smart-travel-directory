@@ -1,11 +1,6 @@
 package com.smarttravel.myanmar;
 
-import static com.smarttravel.myanmar.DestinationAdapter.disableSslVerification;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.util.Base64;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,11 +15,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -153,31 +146,24 @@ public class DestinationDetailActivity extends AppCompatActivity {
         contactTextView.setText(destination.getContact() != null ? destination.getContact() : "No contact provided");
         additionalInfoTextView.setText(destination.getAdditionalInformation() != null ? destination.getAdditionalInformation() : "No additional info");
 
-        // Handle images (base64 or placeholder)
-        List<Bitmap> imageBitmaps = new ArrayList<>();
-        List<String> base64Images = destination.getImageUrl();
-        if (base64Images != null) {
-            for (String base64 : base64Images) {
-                if (base64 != null && !base64.isEmpty()) {
-                    try {
-                        if (base64.startsWith("data:image")) {
-                            int commaIndex = base64.indexOf(",");
-                            if (commaIndex != -1) base64 = base64.substring(commaIndex + 1);
-                        }
-                        byte[] decodedString = Base64.decode(base64, Base64.DEFAULT);
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                        imageBitmaps.add(bitmap);
-                    } catch (Exception e) {
-                        Log.e("ImageDecode", "Failed to decode base64 image", e);
-                    }
-                }
-            }
-        }
-        if (imageBitmaps.isEmpty()) {
-            imageBitmaps.add(BitmapFactory.decodeResource(getResources(), R.drawable.placeholder_image));
+        // Make all text fields' links clickable
+        android.text.util.Linkify.addLinks(descriptionTextView, android.text.util.Linkify.ALL);
+        descriptionTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        android.text.util.Linkify.addLinks(addressTextView, android.text.util.Linkify.ALL);
+        addressTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        android.text.util.Linkify.addLinks(contactTextView, android.text.util.Linkify.ALL);
+        contactTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        android.text.util.Linkify.addLinks(additionalInfoTextView, android.text.util.Linkify.ALL);
+        additionalInfoTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+
+        // Handle images (list of URLs)
+        List<String> imageUrls = destination.getImageUrl();
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            imageUrls = new ArrayList<>();
+            imageUrls.add("placeholder"); // Use a placeholder if no images
         }
         imagesRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        imagesRecyclerView.setAdapter(new ImagesCarouselAdapter(imageBitmaps));
+        imagesRecyclerView.setAdapter(new ImagesCarouselAdapter(imageUrls));
         // Add PagerSnapHelper for snapping
         PagerSnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(imagesRecyclerView);
@@ -240,10 +226,10 @@ public class DestinationDetailActivity extends AppCompatActivity {
         }
 
         // Debug logging
-        if (base64Images != null) {
-            Log.d("DestinationDetailActivity", "imageUrl length: " + base64Images.size());
-            if (!base64Images.isEmpty()) {
-                Log.d("DestinationDetailActivity", "First image string: " + base64Images.get(0));
+        if (imageUrls != null) {
+            Log.d("DestinationDetailActivity", "imageUrl length: " + imageUrls.size());
+            if (!imageUrls.isEmpty()) {
+                Log.d("DestinationDetailActivity", "First image URL: " + imageUrls.get(0));
             }
         }
     }

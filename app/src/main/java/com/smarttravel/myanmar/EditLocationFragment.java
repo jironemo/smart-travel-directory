@@ -85,7 +85,15 @@ public class EditLocationFragment extends Fragment {
             data.put("description", description);
             db.collection("locations").document(location.getId())
                 .update(data)
-                .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Location updated!", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Location updated successfully!", Toast.LENGTH_SHORT).show();
+                    // Navigate back to Locations List
+                    if (getParentFragmentManager() != null) {
+                        getParentFragmentManager().beginTransaction()
+                            .replace(R.id.admin_content_frame, new LocationsListFragment())
+                            .commit();
+                    }
+                })
                 .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to update location", Toast.LENGTH_SHORT).show());
         });
         return view;

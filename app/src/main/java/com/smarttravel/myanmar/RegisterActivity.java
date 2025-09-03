@@ -11,12 +11,10 @@ import android.util.Base64;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.ByteArrayOutputStream;
@@ -105,7 +103,7 @@ public class RegisterActivity extends AppCompatActivity {
                                 user.setUsername(username);
                                 user.setProfile_picture(profileImageBase64);
                                 user.setCreated_at(now);
-                                user.setUserType("NORMAL"); // Set userType in User object
+                                user.setUser_type("NORMAL"); // Set userType in User object
                                 User.setCurrentUser(user);
                                 SharedPreferences.Editor editor = getSharedPreferences("user_prefs", MODE_PRIVATE).edit();
                                 editor.putString("user_id", user.getId());

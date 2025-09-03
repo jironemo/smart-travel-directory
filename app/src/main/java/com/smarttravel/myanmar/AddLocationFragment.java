@@ -53,7 +53,15 @@ public class AddLocationFragment extends Fragment {
             data.put("division", division);
             data.put("description", description);
             db.collection("locations").add(data)
-                .addOnSuccessListener(docRef -> Toast.makeText(getContext(), "Location added!", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(docRef -> {
+                    Toast.makeText(getContext(), "Location added successfully!", Toast.LENGTH_SHORT).show();
+                    // Navigate back to Locations List
+                    if (getParentFragmentManager() != null) {
+                        getParentFragmentManager().beginTransaction()
+                            .replace(R.id.admin_content_frame, new LocationsListFragment())
+                            .commit();
+                    }
+                })
                 .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to add location", Toast.LENGTH_SHORT).show());
         });
         return view;

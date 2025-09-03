@@ -30,10 +30,17 @@ public class AddCategoryFragment extends Fragment {
             }
             Category category = new Category(name, description);
             db.collection("category").add(category)
-                .addOnSuccessListener(docRef -> Toast.makeText(getContext(), "Category added!", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(docRef -> {
+                    Toast.makeText(getContext(), "Category added successfully!", Toast.LENGTH_SHORT).show();
+                    // Navigate back to Category List
+                    if (getParentFragmentManager() != null) {
+                        getParentFragmentManager().beginTransaction()
+                            .replace(R.id.admin_content_frame, new CategoryListFragment())
+                            .commit();
+                    }
+                })
                 .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to add category", Toast.LENGTH_SHORT).show());
         });
         return view;
     }
 }
-

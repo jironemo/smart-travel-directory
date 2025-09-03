@@ -2,8 +2,6 @@ package com.smarttravel.myanmar;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,17 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.material.card.MaterialCardView;
 
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
 import java.util.List;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.ViewHolder> {
 
@@ -44,42 +32,6 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.item_destination, parent, false);
         return new ViewHolder(view);
-    }
-
-    static void disableSslVerification() {
-        try
-        {
-            // Create a trust manager that does not validate certificate chains
-            TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                }
-            }
-            };
-
-            // Install the all-trusting trust manager
-            SSLContext sc = SSLContext.getInstance("SSL");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
-            // Create all-trusting host name verifier
-            HostnameVerifier allHostsValid = new HostnameVerifier() {
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            };
-
-            // Install the all-trusting host verifier
-            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -101,24 +53,18 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
         );
         // Show popular badge
         holder.popularBadge.setVisibility(destination.isPopular() ? View.VISIBLE : View.GONE);
-        // Display first image from the list (base64 or with prefix)
+        // Display first image from the list (URL only)
         List<String> imageList = destination.getImageUrl();
         String firstImage = (imageList != null && !imageList.isEmpty()) ? imageList.get(0) : null;
+        ImageView imageView = holder.imageView;
         if (firstImage != null && !firstImage.isEmpty()) {
-            try {
-                // Strip base64 prefix if present
-                if (firstImage.startsWith("data:image")) {
-                    int commaIndex = firstImage.indexOf(",");
-                    if (commaIndex != -1) firstImage = firstImage.substring(commaIndex + 1);
-                }
-                byte[] imageBytes = android.util.Base64.decode(firstImage, android.util.Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                holder.imageView.setImageBitmap(bitmap);
-            } catch (Exception e) {
-                holder.imageView.setImageResource(R.drawable.placeholder_image);
-            }
+            Glide.with(context)
+                .load(firstImage)
+                .centerCrop()
+                .placeholder(R.drawable.placeholder_image)
+                .into(imageView);
         } else {
-            holder.imageView.setImageResource(R.drawable.placeholder_image);
+            imageView.setImageResource(R.drawable.placeholder_image);
         }
     }
 
@@ -127,7 +73,7 @@ public class DestinationAdapter extends RecyclerView.Adapter<DestinationAdapter.
         return destinations.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
         MaterialCardView cardView;
         ImageView imageView;
         TextView nameTextView;

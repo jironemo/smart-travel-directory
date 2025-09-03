@@ -8,60 +8,59 @@
     android:background="@color/background_light"
     tools:context="com.smarttravel.myanmar.MainActivity">
 
-    <LinearLayout
-        android:id="@+id/mainContentContainer"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <!-- Simple header without search -->
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
+            android:id="@+id/mainContentContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardElevation="4dp"
-            app:cardCornerRadius="0dp"
-            app:cardBackgroundColor="@color/primary">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <TextView
+            <!-- Simple header without search -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Discover Myanmar"
-                android:padding="20dp"
-                android:textColor="@android:color/white"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium" />
-        </com.google.android.material.card.MaterialCardView>
+                app:cardElevation="4dp"
+                app:cardCornerRadius="0dp"
+                app:cardBackgroundColor="@color/primary">
 
-        <!-- Results Section only -->
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeRefreshLayout"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Discover Myanmar"
+                    android:padding="20dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium" />
+            </com.google.android.material.card.MaterialCardView>
 
+            <!-- Combined RecyclerView for Popular and Main Destinations -->
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerView"
+                android:id="@+id/mainRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:padding="16dp"
+                android:padding="0dp"
                 tools:listitem="@layout/item_destination" />
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-        <TextView
-            android:id="@+id/noResultsTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="No Results Found"
-            android:textSize="18sp"
-            android:textColor="@color/text_secondary"
-            android:gravity="center"
-            android:visibility="gone"
-            android:layout_marginTop="8dp" />
+            <TextView
+                android:id="@+id/noResultsTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No Results Found"
+                android:textSize="18sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="center"
+                android:visibility="gone"
+                android:layout_marginTop="8dp" />
 
-    </LinearLayout>
+        </LinearLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
